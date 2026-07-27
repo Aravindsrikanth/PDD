@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-// The two hub files that should be visible in your lib folder:
 import 'package:icu_app/backend/state/app_state.dart';
 import 'package:icu_app/frontend/screens/login_screen.dart';
 import 'package:icu_app/frontend/screens/registration_screen.dart';
