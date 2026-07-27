@@ -111,7 +111,6 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                   title: Text('$staffId ($role)'),
                   subtitle: Text('Status: $status'),
                   trailing: isMainAdmin ? const Text('MASTER') : PopupMenuButton<String>(
-                    onPressed: () {},
                     onSelected: (val) async {
                        if (val == 'approve') await appState.approveUser(staffId);
                        if (val == 'block') await appState.blockUser(staffId);

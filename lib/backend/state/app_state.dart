@@ -43,6 +43,10 @@ class AppState extends ChangeNotifier {
     syncWithServer();
   }
 
+  void updateSmsConfig(String sid, String token, String number) {
+    _smsService.updateCredentials(sid, token, number);
+  }
+
   bool get isCloudSyncActive => _mongoService.isConfigured;
 
   String? _currentUserRole;
