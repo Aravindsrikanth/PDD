@@ -144,7 +144,7 @@ class MongoService {
   Future<List<Map<String, String>>> fetchPrescriptions() async {
     final res = await _post("find", {"collection": "prescriptions", "sort": {"date": -1}});
     if (res != null) {
-      final data = (result['documents'] as List).map((i) => (i as Map).map((k, v) => MapEntry(k.toString(), v.toString()))).toList();
+      final data = (res['documents'] as List).map((i) => (i as Map).map((k, v) => MapEntry(k.toString(), v.toString()))).toList();
       return data;
     }
     return [];
