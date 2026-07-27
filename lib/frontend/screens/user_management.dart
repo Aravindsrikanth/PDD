@@ -131,7 +131,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
     final appState = Provider.of<AppState>(context);
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Staff & Access Control'),
+        title: const Text('User Management'),
         actions: [IconButton(onPressed: _loadStaff, icon: const Icon(Icons.refresh))],
       ),
       body: _isLoading 
