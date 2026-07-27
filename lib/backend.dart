@@ -266,7 +266,7 @@ class SmsService {
   String _sid = 'ACxxx'; String _tok = 'xxx'; String _num ='+1555';
   void updateCredentials(String sid, String tok, String num) { _sid = sid; _tok = tok; _num = num; if (!kIsWeb) _tf = TwilioFlutter(accountSid: _sid, authToken: _tok, twilioNumber: _num); }
   Future<bool> sendOtpSms(String phone, String otp) async {
-    if (kIsWeb) return true;
+    if (kIsWeb) { debugPrint('Mock SMS to $phoneNumber: $otp'); return true; }
     if (_tf == null) return false;
     try { await _tf!.sendSMS(toNumber: phone, messageBody: 'Code: $otp'); return true; } catch (_) { return false; }
   }
@@ -297,14 +297,18 @@ class AppState extends ChangeNotifier {
   void updateSmsConfig(String s, String t, String n) { _smsService.updateCredentials(s, t, n); }
 
   String? _currentUserRole; String? get currentUserRole => _currentUserRole;
-  final List<String> _activeStaff = ['Dr. Smith', 'Dr. Sarah', 'Nurse John']; List<String> get activeStaff => _activeStaff;
+  final List<String> _activeStaff = ['Dr. Smith', 'Dr. Sarah', 'Nurse John', 'Nurse Emma', 'Dr. Mike', 'Dr. Anna', 'Nurse Chris', 'Nurse Lisa']; 
+  List<String> get activeStaff => _activeStaff;
 
   List<Medication> _medications = [
-    Medication(id: 'm1', name: 'Propofol', category: 'Anesthetic', standardDosePerKg: 2.0, minDosePerKg: 1.5, maxDosePerKg: 2.5, unit: 'mg', interactions: ['m2']),
+    Medication(id: 'm1', name: 'Propofol', category: 'Anesthetic', standardDosePerKg: 2.0, minDosePerKg: 1.5, maxDosePerKg: 2.5, unit: 'mg', interactions: ['m2', 'm3', 'm4']),
+    Medication(id: 'm2', name: 'Midazolam', category: 'Sedative', standardDosePerKg: 0.05, minDosePerKg: 0.02, maxDosePerKg: 0.1, unit: 'mg', interactions: ['m1', 'm3']),
+    Medication(id: 'm3', name: 'Fentanyl', category: 'Analgesic', standardDosePerKg: 1.0, minDosePerKg: 0.5, maxDosePerKg: 2.0, unit: 'mcg', interactions: ['m1', 'm2']),
+    Medication(id: 'm4', name: 'Norepinephrine', category: 'Vasopressor', standardDosePerKg: 0.1, minDosePerKg: 0.01, maxDosePerKg: 0.5, unit: 'mcg/kg/min', interactions: ['m1']),
   ];
   List<Medication> get medications => _medications;
 
-  String _shiftHandover = "Stable. All checks complete."; String get shiftHandover => _shiftHandover;
+  String _shiftHandover = "Current ward status: Stable. All ventilator checks complete."; String get shiftHandover => _shiftHandover;
   void updateHandover(String text) { _shiftHandover = text; notifyListeners(); }
 
   List<Patient> _patients = []; List<Patient> get patients => _patients;
@@ -333,7 +337,7 @@ class AppState extends ChangeNotifier {
   void addPrescription(Map<String, String> p) async {
     if (await _mongoService.addPrescription(p)) {
       _prescriptions.insert(0, p);
-      await _mongoService.addLog({'time': p['date']!, 'user': _currentUserRole ?? 'System', 'action': 'New Rx: ${p['med']}'});
+      await _mongoService.addLog({'time': p['date']!, 'user': _currentUserRole ?? 'System', 'action': 'New Prescription: ${p['med']} for ${p['patient']}'});
       _activityLogs = await _mongoService.fetchLogs();
       notifyListeners();
     }
@@ -342,7 +346,7 @@ class AppState extends ChangeNotifier {
   void addPatient(Patient p) async {
     if (await _mongoService.savePatient(p)) {
       _patients.insert(0, p);
-      await _mongoService.addLog({'time': DateTime.now().toIso8601String(), 'user': _currentUserRole ?? 'System', 'action': 'Admission: ${p.name}'});
+      await _mongoService.addLog({'time': DateTime.now().toIso8601String(), 'user': _currentUserRole ?? 'System', 'action': 'Admission: ${p.name} admitted to ${p.bedNumber}'});
       _activityLogs = await _mongoService.fetchLogs();
       notifyListeners();
     }
@@ -356,13 +360,14 @@ class AppState extends ChangeNotifier {
       if (plat != null) _patients[i].platelets = plat; if (creat != null) _patients[i].creatinine = creat;
       if (gcsVal != null) _patients[i].gcs = gcsVal; if (fiO2Val != null) _patients[i].fiO2 = fiO2Val;
       if (paO2Val != null) _patients[i].paO2 = paO2Val;
+      _patients[i].history.add('Clinical data updated at ${DateTime.now().toIso8601String()}');
       await _mongoService.savePatient(_patients[i]);
       notifyListeners();
     }
   }
 
   void triggerEmergencyAlert(String type) async {
-    await _mongoService.addLog({'user': _currentUserRole ?? 'System', 'action': 'ALERT: $type'});
+    await _mongoService.addLog({'user': _currentUserRole ?? 'System', 'action': 'CRITICAL ALERT: $type triggered', 'timestamp': DateTime.now().toIso8601String()});
     _activityLogs = await _mongoService.fetchLogs();
     notifyListeners();
   }
@@ -395,7 +400,7 @@ class AppState extends ChangeNotifier {
     if (i != -1) {
       final p = _patients[i];
       if (await _mongoService.deletePatient(id)) {
-        await _mongoService.addLog({'user': _currentUserRole ?? 'System', 'action': 'Discharged: ${p.name}'});
+        await _mongoService.addLog({'user': _currentUserRole ?? 'System', 'action': 'Patient Discharged: ${p.name} from ${p.bedNumber}'});
         _patients.removeAt(i);
         _activityLogs = await _mongoService.fetchLogs();
         notifyListeners();
