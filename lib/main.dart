@@ -18,6 +18,9 @@ import 'package:icu_app/frontend/screens/analytics.dart';
 import 'package:icu_app/frontend/screens/report_generator.dart';
 import 'package:icu_app/frontend/screens/scoring.dart';
 import 'package:icu_app/frontend/screens/drug_database.dart';
+import 'package:icu_app/frontend/screens/clinical_protocols.dart';
+import 'package:icu_app/frontend/screens/shift_handover.dart';
+import 'package:icu_app/frontend/screens/user_management.dart';
 
 void main() {
   runApp(
@@ -88,25 +91,25 @@ class ICUSuitePro extends StatelessWidget {
       ),
       initialRoute: '/',
       routes: {
-        '/': (context) => const SplashScreen(),
-        '/login': (context) => const MedicalLoginScreen(), 
-        '/register': (context) => const RegistrationScreen(),
-        '/forgot-password': (context) => const ForgotPasswordScreen(),
-        '/config': (context) => const DbConfigScreen(),
-        '/dashboard': (context) => const MainShell(),
-        '/patient_management': (context) => const PatientManagementScreen(),
-        '/dose_calculator': (context) => const DoseCalculatorScreen(),
-        '/interaction_checker': (context) => const InteractionScreen(),
-        '/prescriptions': (context) => const PrescriptionScreen(),
-        '/audit_logs': (context) => const AuditLogScreen(),
-        '/emergency': (context) => const EmergencyScreen(),
-        '/analytics': (context) => const AnalyticsScreen(),
-        '/reports': (context) => const ReportGeneratorScreen(),
-        '/scoring': (context) => const ScoringScreen(),
-        '/drug_database': (context) => const DrugDatabaseScreen(),
-        '/protocols': (context) => const ClinicalProtocolsScreen(),
-        '/handover': (context) => const ShiftHandoverScreen(),
-        '/user_management': (context) => const UserManagementScreen(),
+        '/': (context) => SplashScreen(),
+        '/login': (context) => MedicalLoginScreen(), 
+        '/register': (context) => RegistrationScreen(),
+        '/forgot-password': (context) => ForgotPasswordScreen(),
+        '/config': (context) => DbConfigScreen(),
+        '/dashboard': (context) => MainShell(),
+        '/patient_management': (context) => PatientManagementScreen(),
+        '/dose_calculator': (context) => DoseCalculatorScreen(),
+        '/interaction_checker': (context) => InteractionScreen(),
+        '/prescriptions': (context) => PrescriptionScreen(),
+        '/audit_logs': (context) => AuditLogScreen(),
+        '/emergency': (context) => EmergencyScreen(),
+        '/analytics': (context) => AnalyticsScreen(),
+        '/reports': (context) => ReportGeneratorScreen(),
+        '/scoring': (context) => ScoringScreen(),
+        '/drug_database': (context) => DrugDatabaseScreen(),
+        '/protocols': (context) => ClinicalProtocolsScreen(),
+        '/handover': (context) => ShiftHandoverScreen(),
+        '/user_management': (context) => UserManagementScreen(),
       },
     );
   }
