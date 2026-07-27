@@ -40,7 +40,7 @@ class _MedicalLoginScreenState extends State<MedicalLoginScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFF0F4F8),
       body: Center(child: SingleChildScrollView(padding: const EdgeInsets.all(20), child: Container(
-        width: isMobile ? double.infinity : 1100, decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(24)),
+        width: isMobile ? size.width * 0.95 : 1100, decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(24)),
         child: ClipRRect(borderRadius: BorderRadius.circular(24), child: isMobile ? Column(children: [_buildLeft(true), _buildRight(context, appState, true)]) : Row(children: [Expanded(child: _buildLeft(false)), Expanded(child: _buildRight(context, appState, false))])),
       ))),
     );
@@ -72,17 +72,33 @@ class _MainShellState extends State<MainShell> {
     return Scaffold(
       appBar: AppBar(title: Text('ICU Dashboard - $role'), actions: [IconButton(onPressed: () => appState.toggleTheme(), icon: Icon(appState.isDarkMode ? Icons.light_mode : Icons.dark_mode)), const VerticalDivider(width: 20, indent: 15, endIndent: 15), CircleAvatar(child: Text(role?[0] ?? 'U')), const SizedBox(width: 20)]),
       drawer: Drawer(child: ListView(padding: EdgeInsets.zero, children: [
-        DrawerHeader(decoration: const BoxDecoration(color: Color(0xFF0D47A1)), child: Column(children: [const Icon(Icons.account_circle, color: Colors.white, size: 50), Text('Staff: $role', style: const TextStyle(color: Colors.white)), const Text('ID: 88492-A', style: TextStyle(color: Colors.white70))])),
+        DrawerHeader(decoration: const BoxDecoration(color: Color(0xFF0D47A1)), child: Column(children: [const Icon(Icons.account_circle, color: Colors.white, size: 50), Text('Staff: $role', style: const TextStyle(color: Colors.white)), const Text('ID: Authorized Session', style: TextStyle(color: Colors.white70))])),
+        
         ListTile(leading: const Icon(Icons.dashboard), title: const Text('Dashboard'), onTap: () => Navigator.pop(context)),
-        ListTile(leading: const Icon(Icons.people), title: const Text('Patient Management'), onTap: () => Navigator.pushNamed(context, '/patient_management')),
-        ListTile(leading: const Icon(Icons.calculate), title: const Text('Dose Calculator'), onTap: () => Navigator.pushNamed(context, '/dose_calculator')),
-        ListTile(leading: const Icon(Icons.assessment_outlined), title: const Text('Clinical Scoring (SOFA)'), onTap: () => Navigator.pushNamed(context, '/scoring')),
-        ListTile(leading: const Icon(Icons.security), title: const Text('Interaction Checker'), onTap: () => Navigator.pushNamed(context, '/interaction_checker')),
-        ListTile(leading: const Icon(Icons.menu_book), title: const Text('Drug Reference'), onTap: () => Navigator.pushNamed(context, '/drug_database')),
-        ListTile(leading: const Icon(Icons.receipt_long), title: const Text('Prescriptions'), onTap: () => Navigator.pushNamed(context, '/prescriptions')),
-        ListTile(leading: const Icon(Icons.bar_chart), title: const Text('Medication Analytics'), onTap: () => Navigator.pushNamed(context, '/analytics')),
+        
+        // --- DOCTOR EXCLUSIVE ---
+        if (role == 'Doctor') ...[
+          ListTile(leading: const Icon(Icons.assessment_outlined), title: const Text('SOFA Scoring'), onTap: () => Navigator.pushNamed(context, '/scoring')),
+          ListTile(leading: const Icon(Icons.calculate), title: const Text('Dose Calculator'), onTap: () => Navigator.pushNamed(context, '/dose_calculator')),
+          ListTile(leading: const Icon(Icons.menu_book_outlined), title: const Text('Clinical Protocols'), onTap: () => Navigator.pushNamed(context, '/protocols')),
+        ],
+
+        // --- NURSE EXCLUSIVE ---
+        if (role == 'Nurse') ...[
+          ListTile(leading: const Icon(Icons.people), title: const Text('Patient Management'), onTap: () => Navigator.pushNamed(context, '/patient_management')),
+          ListTile(leading: const Icon(Icons.assignment_turned_in), title: const Text('Shift Handover'), onTap: () => Navigator.pushNamed(context, '/handover')),
+          ListTile(leading: const Icon(Icons.medical_information_outlined), title: const Text('Drug Database'), onTap: () => Navigator.pushNamed(context, '/drug_database')),
+        ],
+
+        // --- ADMIN EXCLUSIVE ---
+        if (role == 'Admin') ...[
+          ListTile(leading: const Icon(Icons.manage_accounts), title: const Text('User Management'), onTap: () => Navigator.pushNamed(context, '/user_management')),
+          ListTile(leading: const Icon(Icons.bar_chart), title: const Text('Analytics'), onTap: () => Navigator.pushNamed(context, '/analytics')),
+          ListTile(leading: const Icon(Icons.history), title: const Text('Activity Logs'), onTap: () => Navigator.pushNamed(context, '/audit_logs')),
+          ListTile(leading: const Icon(Icons.settings_applications), title: const Text('System Config'), onTap: () => Navigator.pushNamed(context, '/config')),
+        ],
+
         const Divider(),
-        ListTile(leading: const Icon(Icons.history), title: const Text('Activity Logs'), onTap: () => Navigator.pushNamed(context, '/audit_logs')),
         ListTile(leading: const Icon(Icons.logout, color: Colors.red), title: const Text('Logout', style: TextStyle(color: Colors.red)), onTap: () { appState.logout(); Navigator.pushReplacementNamed(context, '/login'); }),
       ])),
       body: const DashboardContent(),
@@ -94,109 +110,35 @@ class DashboardContent extends StatelessWidget {
   const DashboardContent({super.key});
   @override
   Widget build(BuildContext context) {
-    final appState = Provider.of<AppState>(context); final bool isMobile = MediaQuery.of(context).size.width < 600;
-    final criticalPatients = appState.patients.where((p) => p.status == 'Critical').toList();
-    return RefreshIndicator(onRefresh: () => appState.syncWithServer(), child: SingleChildScrollView(padding: EdgeInsets.all(isMobile ? 16 : 24), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-        Text('Clinical Overview', style: GoogleFonts.outfit(fontSize: 28, fontWeight: FontWeight.bold)),
-        Row(children: [
-          TextButton.icon(onPressed: () => appState.syncWithServer(), icon: const Icon(Icons.sync, size: 18), label: const Text('SYNC SERVER')),
-          const SizedBox(width: 12),
-          ElevatedButton.icon(onPressed: () => Navigator.pushNamed(context, '/emergency'), icon: const Icon(Icons.warning_amber, size: 18), label: const Text('EMERGENCY'), style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white)),
-        ]),
-      ]),
+    final appState = Provider.of<AppState>(context); final role = appState.currentUserRole; final bool isMobile = MediaQuery.of(context).size.width < 600;
+    return SingleChildScrollView(padding: const EdgeInsets.all(24), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Text('Welcome, $role', style: GoogleFonts.outfit(fontSize: 28, fontWeight: FontWeight.bold)),
       const SizedBox(height: 24),
-      if (criticalPatients.isNotEmpty) Container(padding: const EdgeInsets.all(16), decoration: BoxDecoration(color: Colors.red[50], borderRadius: BorderRadius.circular(12), border: Border.all(color: Colors.red[100]!)), child: Row(children: [
-        const Icon(Icons.warning, color: Colors.red), const SizedBox(width: 16),
-        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text('CRITICAL PATIENTS: ${criticalPatients.length}', style: const TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
-          Text('Beds: ${criticalPatients.map((p) => p.bedNumber).join(", ")} require attention.', style: TextStyle(color: Colors.red[900], fontSize: 12)),
-        ])),
-        TextButton(onPressed: () => Navigator.pushNamed(context, '/patient_management'), child: const Text('VIEW ALL')),
-      ])),
-      GridView.count(shrinkWrap: true, physics: const NeverScrollableScrollPhysics(), crossAxisCount: isMobile ? 2 : 4, crossAxisSpacing: 12, mainAxisSpacing: 12, children: [
-        StatCard(title: 'Active Patients', value: appState.patients.length.toString(), icon: Icons.people, color: Colors.blue, onTap: () => Navigator.pushNamed(context, '/patient_management')),
-        StatCard(title: 'Available Beds', value: '∞', icon: Icons.bed, color: Colors.green),
-        StatCard(title: 'Critical Alerts', value: criticalPatients.length.toString(), icon: Icons.notification_important, color: Colors.orange),
-        StatCard(title: 'Staff Active', value: appState.activeStaff.length.toString(), icon: Icons.medical_services, color: Colors.purple),
-      ]),
+      
+      if (role == 'Doctor') _buildDoctorGrid(appState, isMobile),
+      if (role == 'Nurse') _buildNurseGrid(appState, isMobile),
+      if (role == 'Admin') _buildAdminGrid(appState, isMobile),
+
       const SizedBox(height: 32),
-      _buildHandover(appState),
-      const SizedBox(height: 32),
-      _buildPatientList(context, appState.patients),
-      const SizedBox(height: 32),
-      _buildRecentActivity(appState.activityLogs),
-    ])));
+      Text(role == 'Admin' ? 'Recent System Activity' : 'Priority Patients', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+      ...appState.patients.take(5).map((p) => ListTile(leading: CircleAvatar(child: Text(p.name[0])), title: Text(p.name), subtitle: Text('Bed: ${p.bedNumber} • ${p.status}'))),
+    ]));
   }
-  Widget _buildHandover(AppState appState) => Card(color: const Color(0xFF0D47A1), child: Padding(padding: const EdgeInsets.all(20), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-    const Row(children: [Icon(Icons.assignment, color: Colors.white, size: 20), SizedBox(width: 10), Text('SHIFT HANDOVER NOTES', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12))]),
-    const SizedBox(height: 8), Text(appState.shiftHandover, style: const TextStyle(color: Colors.white, fontSize: 16)),
-    const SizedBox(height: 16), const Text('Last updated: Just now by Dr. Smith', style: TextStyle(color: Colors.white54, fontSize: 11)),
-  ])));
-  Widget _buildPatientList(BuildContext context, List<Patient> patients) => Card(child: Padding(padding: const EdgeInsets.all(20), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-    const Text('Current Patients in ICU', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-    const SizedBox(height: 16),
-    ...patients.take(4).map((p) => Column(children: [
-      ListTile(
-        leading: CircleAvatar(backgroundColor: Colors.blue[50], child: const Icon(Icons.person, size: 20)),
-        title: Text(p.name, style: const TextStyle(fontWeight: FontWeight.bold)),
-        subtitle: Text('Bed ${p.bedNumber} • Age: ${p.age}'),
-        trailing: Container(padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4), decoration: BoxDecoration(color: p.status == 'Critical' ? Colors.red[50] : Colors.green[50], borderRadius: BorderRadius.circular(20)), child: Text(p.status, style: TextStyle(color: p.status == 'Critical' ? Colors.red : Colors.green, fontWeight: FontWeight.bold, fontSize: 12))),
-      ),
-      const Divider(),
-    ])).toList(),
-  ])));
-  Widget _buildRecentActivity(List<Map<String, dynamic>> logs) => Card(child: Padding(padding: const EdgeInsets.all(20), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-    const Text('Recent Activities', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-    const SizedBox(height: 16),
-    ...logs.take(5).map((log) => Padding(padding: const EdgeInsets.only(bottom: 12), child: Row(children: [
-      Container(width: 8, height: 8, decoration: const BoxDecoration(color: Colors.blue, shape: BoxShape.circle)),
-      const SizedBox(width: 12),
-      Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(log['action']?.toString() ?? '', style: const TextStyle(fontWeight: FontWeight.w500)), Text(log['timestamp']?.toString() ?? '', style: const TextStyle(color: Colors.grey, fontSize: 12))])),
-    ]))).toList(),
-  ])));
-}
 
-class PatientManagementScreen extends StatefulWidget {
-  const PatientManagementScreen({super.key});
-  @override State<PatientManagementScreen> createState() => _PatientManagementScreenState();
-}
+  Widget _buildDoctorGrid(AppState appState, bool isMobile) => GridView.count(shrinkWrap: true, crossAxisCount: 2, crossAxisSpacing: 12, mainAxisSpacing: 12, children: [
+    StatCard(title: 'Critical Alerts', value: '1', icon: Icons.warning_amber, color: Colors.red, onTap: () {}),
+    StatCard(title: 'Active Rounds', value: appState.patients.length.toString(), icon: Icons.assignment_ind, color: Colors.blue),
+  ]);
 
-class _PatientManagementScreenState extends State<PatientManagementScreen> {
-  @override
-  Widget build(BuildContext context) {
-    final appState = Provider.of<AppState>(context);
-    return Scaffold(
-      appBar: AppBar(title: const Text('Patient Management')),
-      body: ListView.builder(itemCount: appState.patients.length, itemBuilder: (context, i) {
-        final p = appState.patients[i];
-        return ListTile(leading: const CircleAvatar(child: Icon(Icons.person)), title: Text(p.name), subtitle: Text('Bed: ${p.bedNumber} • Weight: ${p.weight}kg'), trailing: Text(p.status, style: TextStyle(color: p.status == 'Critical' ? Colors.red : Colors.green, fontWeight: FontWeight.bold)));
-      }),
-      floatingActionButton: FloatingActionButton(onPressed: () {}, child: const Icon(Icons.person_add)),
-    );
-  }
-}
+  Widget _buildNurseGrid(AppState appState, bool isMobile) => GridView.count(shrinkWrap: true, crossAxisCount: 2, crossAxisSpacing: 12, mainAxisSpacing: 12, children: [
+    StatCard(title: 'My Beds', value: appState.patients.length.toString(), icon: Icons.monitor_heart, color: Colors.teal),
+    StatCard(title: 'Available Beds', value: appState.availableBeds.length.toString(), icon: Icons.bed, color: Colors.green),
+  ]);
 
-class DoseCalculatorScreen extends StatefulWidget {
-  const DoseCalculatorScreen({super.key});
-  @override State<DoseCalculatorScreen> createState() => _DoseCalculatorScreenState();
-}
-
-class _DoseCalculatorScreenState extends State<DoseCalculatorScreen> {
-  final _weightController = TextEditingController(); Medication? _selectedMed;
-  @override
-  Widget build(BuildContext context) {
-    final appState = Provider.of<AppState>(context);
-    return Scaffold(
-      appBar: AppBar(title: const Text('Dose Calculator')),
-      body: Padding(padding: const EdgeInsets.all(24), child: Column(children: [
-        DropdownButtonFormField<Medication>(value: _selectedMed, decoration: const InputDecoration(labelText: 'Medication'), items: appState.medications.map((m) => DropdownMenuItem(value: m, child: Text(m.name))).toList(), onChanged: (v) => setState(() => _selectedMed = v)),
-        TextField(controller: _weightController, decoration: const InputDecoration(labelText: 'Weight (kg)'), keyboardType: TextInputType.number),
-        const SizedBox(height: 40),
-        if (_selectedMed != null && _weightController.text.isNotEmpty) Text('Dose: ${(double.parse(_weightController.text) * _selectedMed!.standardDosePerKg).toStringAsFixed(2)} ${_selectedMed!.unit}', style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
-      ])),
-    );
-  }
+  Widget _buildAdminGrid(AppState appState, bool isMobile) => GridView.count(shrinkWrap: true, crossAxisCount: 2, crossAxisSpacing: 12, mainAxisSpacing: 12, children: [
+    StatCard(title: 'Staff On Duty', value: appState.activeStaff.length.toString(), icon: Icons.people, color: Colors.purple),
+    StatCard(title: 'Sync Status', value: appState.isCloudSyncActive ? 'ONLINE' : 'OFFLINE', icon: Icons.cloud_done, color: Colors.green),
+  ]);
 }
 
 class UserManagementScreen extends StatefulWidget {
@@ -212,7 +154,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
   Widget build(BuildContext context) {
     final appState = Provider.of<AppState>(context);
     return Scaffold(
-      appBar: AppBar(title: const Text('User Management'), actions: [IconButton(onPressed: _load, icon: const Icon(Icons.refresh))]),
+      appBar: AppBar(title: const Text('User Management')),
       body: _loading ? const Center(child: CircularProgressIndicator()) : ListView.builder(itemCount: _staff.length, itemBuilder: (c, i) => ListTile(title: Text(_staff[i]['staffId']), subtitle: Text(_staff[i]['role']), trailing: PopupMenuButton<String>(onSelected: (v) async { if (v == 'del') await appState.deleteStaff(_staff[i]['staffId']); _load(); }, itemBuilder: (c) => [const PopupMenuItem(value: 'del', child: Text('Delete Account'))]))),
       floatingActionButton: FloatingActionButton.extended(onPressed: () => _showAdd(appState), icon: const Icon(Icons.add), label: const Text('ADD STAFF')),
     );
@@ -220,20 +162,23 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
   void _showAdd(AppState appState) {
     final id = TextEditingController(), ph = TextEditingController(), pw = TextEditingController(); String role = 'Doctor'; bool dLoad = false;
     showDialog(context: context, builder: (c) => StatefulBuilder(builder: (context, setD) => AlertDialog(title: const Text('Add New Staff'), content: Column(mainAxisSize: MainAxisSize.min, children: [
-      DropdownButtonFormField<String>(value: role, items: ['Doctor', 'Nurse'].map((r) => DropdownMenuItem(value: r, child: Text(r))).toList(), onChanged: (v) => setD(() => role = v!)),
+      DropdownButtonFormField<String>(value: role, items: ['Doctor', 'Nurse'].map((r) => DropdownMenuItem(value: r, child: Text(r))).toList(), onChanged: (v) => role = v!),
       TextField(controller: id, decoration: const InputDecoration(labelText: 'Staff ID')),
       TextField(controller: ph, decoration: const InputDecoration(labelText: 'Phone')),
       TextField(controller: pw, decoration: const InputDecoration(labelText: 'Password'), obscureText: true),
     ]), actions: [TextButton(onPressed: () => Navigator.pop(c), child: const Text('Cancel')), ElevatedButton(onPressed: dLoad ? null : () async {
       setD(() => dLoad = true); final s = await appState.register(role, id.text, ph.text, pw.text);
-      if (mounted) { if (s) { Navigator.pop(c); _load(); } else { setD(() => dLoad = false); ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Registration error.'))); } }
+      if (mounted) { if (s) { Navigator.pop(c); _load(); } else { setD(() => dLoad = false); ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Error creating staff.'))); } }
     }, child: dLoad ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)) : const Text('Create'))])));
   }
 }
 
+// Stub screens to satisfy routes
 class RegistrationScreen extends StatelessWidget { const RegistrationScreen({super.key}); @override Widget build(BuildContext context) { return Scaffold(appBar: AppBar(title: const Text('Registration'))); } }
 class ForgotPasswordScreen extends StatelessWidget { const ForgotPasswordScreen({super.key}); @override Widget build(BuildContext context) { return Scaffold(appBar: AppBar(title: const Text('Recovery'))); } }
 class DbConfigScreen extends StatelessWidget { const DbConfigScreen({super.key}); @override Widget build(BuildContext context) { return Scaffold(appBar: AppBar(title: const Text('Config'))); } }
+class PatientManagementScreen extends StatelessWidget { const PatientManagementScreen({super.key}); @override Widget build(BuildContext context) { return Scaffold(appBar: AppBar(title: const Text('Patients'))); } }
+class DoseCalculatorScreen extends StatelessWidget { const DoseCalculatorScreen({super.key}); @override Widget build(BuildContext context) { return Scaffold(appBar: AppBar(title: const Text('Dose Audit'))); } }
 class InteractionScreen extends StatelessWidget { const InteractionScreen({super.key}); @override Widget build(BuildContext context) { return Scaffold(appBar: AppBar(title: const Text('Interactions'))); } }
 class PrescriptionScreen extends StatelessWidget { const PrescriptionScreen({super.key}); @override Widget build(BuildContext context) { return Scaffold(appBar: AppBar(title: const Text('Prescriptions'))); } }
 class AuditLogScreen extends StatelessWidget { const AuditLogScreen({super.key}); @override Widget build(BuildContext context) { return Scaffold(appBar: AppBar(title: const Text('Logs'))); } }
