@@ -8,29 +8,30 @@ import '../models/medication.dart';
 class MongoService {
   String _appId = "YOUR_APP_ID"; 
   String _apiKey = "YOUR_API_KEY"; 
+  String _region = "ap-south-1"; // Default region
   String _baseUrl = "";
   
-  static const String _dataSource = "Cluster0";
-  static const String _database = "icu_db";
+  String _dataSource = "Cluster0";
+  String _database = "icu_db";
 
   MongoService() {
     _updateBaseUrl();
   }
 
-  void updateCredentials(String appId, String apiKey) {
+  void updateCredentials(String appId, String apiKey, {String? region, String? dataSource, String? database}) {
     _appId = appId;
     _apiKey = apiKey;
+    if (region != null) _region = region;
+    if (dataSource != null) _dataSource = dataSource;
+    if (database != null) _database = database;
     _updateBaseUrl();
   }
 
   void _updateBaseUrl() {
-    _baseUrl = "https://ap-south-1.aws.data.mongodb-api.com/app/$_appId/endpoint/data/v1/action";
+    _baseUrl = "https://$_region.aws.data.mongodb-api.com/app/$_appId/endpoint/data/v1/action";
   }
 
-  Map<String, String> get _headers => {
-    'Content-Type': 'application/json',
-    'api-key': _apiKey,
-  };
+  bool get isConfigured => _appId != "YOUR_APP_ID" && _apiKey != "YOUR_API_KEY" && _appId.isNotEmpty && _apiKey.isNotEmpty;
 
   Future<Map<String, dynamic>?> _post(String action, Map<String, dynamic> body) async {
     if (_appId == "YOUR_APP_ID" || _apiKey == "YOUR_API_KEY" || _baseUrl.isEmpty) {

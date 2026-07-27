@@ -13,6 +13,10 @@ class DbConfigScreen extends StatefulWidget {
 class _DbConfigScreenState extends State<DbConfigScreen> {
   final _appIdController = TextEditingController();
   final _apiKeyController = TextEditingController();
+  final _regionController = TextEditingController();
+  final _dbNameController = TextEditingController();
+  final _clusterController = TextEditingController();
+
   final _twilioSidController = TextEditingController();
   final _twilioTokenController = TextEditingController();
   final _twilioNumController = TextEditingController();
@@ -28,6 +32,10 @@ class _DbConfigScreenState extends State<DbConfigScreen> {
     setState(() {
       _appIdController.text = prefs.getString('mongodb_app_id') ?? '';
       _apiKeyController.text = prefs.getString('mongodb_api_key') ?? '';
+      _regionController.text = prefs.getString('mongodb_region') ?? 'ap-south-1';
+      _dbNameController.text = prefs.getString('mongodb_db') ?? 'icu_db';
+      _clusterController.text = prefs.getString('mongodb_cluster') ?? 'Cluster0';
+
       _twilioSidController.text = prefs.getString('twilio_sid') ?? '';
       _twilioTokenController.text = prefs.getString('twilio_token') ?? '';
       _twilioNumController.text = prefs.getString('twilio_num') ?? '';
@@ -58,6 +66,29 @@ class _DbConfigScreenState extends State<DbConfigScreen> {
             TextField(
               controller: _apiKeyController,
               decoration: const InputDecoration(labelText: 'Atlas API Key', border: OutlineInputBorder()),
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _regionController,
+                    decoration: const InputDecoration(labelText: 'Region (e.g. us-east-1)', border: OutlineInputBorder()),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: TextField(
+                    controller: _clusterController,
+                    decoration: const InputDecoration(labelText: 'Cluster Name', border: OutlineInputBorder()),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _dbNameController,
+              decoration: const InputDecoration(labelText: 'Database Name', border: OutlineInputBorder()),
             ),
             const SizedBox(height: 32),
             const Text(
@@ -94,6 +125,10 @@ class _DbConfigScreenState extends State<DbConfigScreen> {
                 onPressed: () async {
                   final appId = _appIdController.text;
                   final apiKey = _apiKeyController.text;
+                  final region = _regionController.text;
+                  final dbName = _dbNameController.text;
+                  final cluster = _clusterController.text;
+                  
                   final sid = _twilioSidController.text;
                   final token = _twilioTokenController.text;
                   final num = _twilioNumController.text;
@@ -101,6 +136,10 @@ class _DbConfigScreenState extends State<DbConfigScreen> {
                   final prefs = await SharedPreferences.getInstance();
                   await prefs.setString('mongodb_app_id', appId);
                   await prefs.setString('mongodb_api_key', apiKey);
+                  await prefs.setString('mongodb_region', region);
+                  await prefs.setString('mongodb_db', dbName);
+                  await prefs.setString('mongodb_cluster', cluster);
+                  
                   await prefs.setString('twilio_sid', sid);
                   await prefs.setString('twilio_token', token);
                   await prefs.setString('twilio_num', num);
@@ -108,7 +147,7 @@ class _DbConfigScreenState extends State<DbConfigScreen> {
                   if (!mounted) return;
                   
                   final appState = Provider.of<AppState>(context, listen: false);
-                  appState.updateMongoConfig(appId, apiKey);
+                  appState.updateMongoConfig(appId, apiKey, region: region, dataSource: cluster, database: dbName);
                   appState.updateSmsConfig(sid, token, num);
                   
                   if (mounted) {

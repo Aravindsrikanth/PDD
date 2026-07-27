@@ -30,6 +30,10 @@ class AppState extends ChangeNotifier {
     final prefs = await SharedPreferences.getInstance();
     final appId = prefs.getString('mongodb_app_id');
     final apiKey = prefs.getString('mongodb_api_key');
+    final region = prefs.getString('mongodb_region');
+    final dbName = prefs.getString('mongodb_db');
+    final cluster = prefs.getString('mongodb_cluster');
+    
     final emailUser = prefs.getString('smtp_user');
     final emailPass = prefs.getString('smtp_pass');
     final twilioSid = prefs.getString('twilio_sid');
@@ -37,7 +41,13 @@ class AppState extends ChangeNotifier {
     final twilioNum = prefs.getString('twilio_num');
     
     if (appId != null && apiKey != null) {
-      _mongoService.updateCredentials(appId, apiKey);
+      _mongoService.updateCredentials(
+        appId, 
+        apiKey, 
+        region: region, 
+        database: dbName, 
+        dataSource: cluster
+      );
     }
 
     if (emailUser != null && emailPass != null) {
@@ -51,10 +61,12 @@ class AppState extends ChangeNotifier {
     syncWithServer();
   }
 
-  void updateMongoConfig(String appId, String apiKey) {
-    _mongoService.updateCredentials(appId, apiKey);
+  void updateMongoConfig(String appId, String apiKey, {String? region, String? dataSource, String? database}) {
+    _mongoService.updateCredentials(appId, apiKey, region: region, dataSource: dataSource, database: database);
     syncWithServer();
   }
+
+  bool get isCloudSyncActive => _mongoService.isConfigured;
 
   void updateEmailConfig(String user, String pass) {
     _emailService.updateCredentials(user, pass);

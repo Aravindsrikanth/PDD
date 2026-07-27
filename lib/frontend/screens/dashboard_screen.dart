@@ -153,12 +153,32 @@ class DashboardContent extends StatelessWidget {
                       style: GoogleFonts.outfit(fontSize: 28, fontWeight: FontWeight.bold)),
                   Row(
                     children: [
-                      TextButton.icon(
-                        onPressed: () => appState.syncWithServer(),
-                        icon: appState.isLoading 
-                          ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2))
-                          : const Icon(Icons.sync, size: 18),
-                        label: const Text('SYNC SERVER'),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          TextButton.icon(
+                            onPressed: () => appState.syncWithServer(),
+                            icon: appState.isLoading 
+                              ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2))
+                              : const Icon(Icons.sync, size: 18),
+                            label: const Text('SYNC SERVER'),
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: appState.isCloudSyncActive ? Colors.green[50] : Colors.orange[50],
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Text(
+                              appState.isCloudSyncActive ? 'CLOUD SYNC ACTIVE' : 'LOCAL MODE (SYNC DISABLED)',
+                              style: TextStyle(
+                                color: appState.isCloudSyncActive ? Colors.green : Colors.orange,
+                                fontSize: 8,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                       const SizedBox(width: 12),
                       ElevatedButton.icon(
