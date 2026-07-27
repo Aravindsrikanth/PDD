@@ -1,0 +1,38 @@
+[
+  {
+    "id": "p1",
+    "name": "John Doe",
+    "age": 45,
+    "bedNumber": "ICU-01",
+    "status": "Critical",
+    "weight": 82.5,
+    "systolicBP": 90,
+    "diastolicBP": 60,
+    "heartRate": 110,
+    "history": ["Admitted 2024-05-10", "Initial Assessment Completed"]
+  },
+  {
+    "id": "p2",
+    "name": "Sarah Miller",
+    "age": 52,
+    "bedNumber": "ICU-02",
+    "status": "Stable",
+    "weight": 64.0,
+    "systolicBP": 120,
+    "diastolicBP": 80,
+    "heartRate": 75,
+    "history": ["Admitted 2024-05-12"]
+  },
+  {
+    "id": "p3",
+    "name": "Robert Wilson",
+    "age": 68,
+    "bedNumber": "ICU-03",
+    "status": "Critical",
+    "weight": 75.2,
+    "systolicBP": 85,
+    "diastolicBP": 55,
+    "heartRate": 125,
+    "history": ["Admitted 2024-05-14"]
+  }
+]

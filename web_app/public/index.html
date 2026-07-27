@@ -1,0 +1,808 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ICU Suite Pro - Professional Critical Care System</title>
+  <!-- FontAwesome for medical & system icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="index.css">
+</head>
+<body>
+
+  <!-- ========================================== -->
+  <!-- 1. SPLASH SCREEN                           -->
+  <!-- ========================================== -->
+  <div id="splash-screen" class="auth-wrapper">
+    <div class="auth-card" style="text-align: center;">
+      <div class="auth-logo"><i class="fa-solid fa-house-medical-flag"></i></div>
+      <h2 style="letter-spacing: 2px;">ICU SUITE PRO</h2>
+      <p style="color: var(--secondary); font-weight: 600;">Professional Critical Care System</p>
+      <div style="margin-top: 30px;"><i class="fa-solid fa-circle-notch fa-spin" style="font-size: 1.5rem; color: #fff;"></i></div>
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- 2. AUTHENTICATION MODULE                  -->
+  <!-- ========================================== -->
+  <div id="auth-screen" class="auth-wrapper" style="display: none;">
+    
+    <!-- Login Form -->
+    <div id="auth-login-card" class="auth-card">
+      <div class="auth-header">
+        <div class="auth-logo"><i class="fa-solid fa-shield-halved"></i></div>
+        <h2>Clinical Authentication</h2>
+        <p>Secure Medical Portal Access</p>
+      </div>
+      <form id="login-form">
+        <div class="form-group">
+          <label for="login-role">Clinical Role</label>
+          <select id="login-role" required>
+            <option value="Doctor">Doctor</option>
+            <option value="Nurse">Nurse</option>
+            <option value="Admin">Admin</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="login-staffId">Staff ID</label>
+          <input type="text" id="login-staffId" class="form-control" placeholder="e.g. admin or 88492-A" required autocomplete="username">
+        </div>
+        <div class="form-group">
+          <label for="login-password">Security Password</label>
+          <input type="password" id="login-password" class="form-control" placeholder="••••••••" required autocomplete="current-password">
+        </div>
+        <button type="submit" class="btn btn-primary" style="margin-top: 15px;">LOGIN TO SYSTEM</button>
+      </form>
+      <div class="auth-links">
+        <a href="#" id="go-to-forgot">Forgot Password?</a>
+        <span class="divider-span">|</span>
+        <a href="#" id="go-to-register">Register Here</a>
+      </div>
+    </div>
+
+    <!-- Registration Form -->
+    <div id="auth-register-card" class="auth-card" style="display: none;">
+      <div class="auth-header">
+        <div class="auth-logo"><i class="fa-solid fa-user-plus"></i></div>
+        <h2>Staff Registration</h2>
+        <p>Register a new clinical profile</p>
+      </div>
+      <form id="register-form">
+        <div class="form-group">
+          <label for="reg-role">Clinical Role</label>
+          <select id="reg-role" required>
+            <option value="Doctor">Doctor</option>
+            <option value="Nurse">Nurse</option>
+            <option value="Admin">Admin</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="reg-staffId">Staff ID Code</label>
+          <input type="text" id="reg-staffId" class="form-control" placeholder="e.g. 50921-N" required>
+        </div>
+        <div class="form-group">
+          <label for="reg-email">Hospital Email</label>
+          <input type="email" id="reg-email" class="form-control" placeholder="dr.name@hospital.com" required>
+        </div>
+        <div class="form-group">
+          <label for="reg-password">Password</label>
+          <input type="password" id="reg-password" class="form-control" placeholder="Min. 6 characters" required autocomplete="new-password">
+        </div>
+        <button type="submit" class="btn btn-primary" style="margin-top: 15px;">REGISTER STAFF ACCOUNT</button>
+      </form>
+      <div class="auth-links">
+        <a href="#" id="reg-to-login">Already have an account? Login</a>
+      </div>
+    </div>
+
+    <!-- Forgot Password Form -->
+    <div id="auth-forgot-card" class="auth-card" style="display: none;">
+      <div class="auth-header">
+        <div class="auth-logo"><i class="fa-solid fa-key"></i></div>
+        <h2>Reset Security Key</h2>
+        <p>Verify details to write a new password</p>
+      </div>
+      <form id="forgot-form">
+        <div class="form-group">
+          <label for="forgot-staffId">Staff ID Code</label>
+          <input type="text" id="forgot-staffId" class="form-control" placeholder="e.g. 88492-A" required>
+        </div>
+        <div class="form-group">
+          <label for="forgot-email">Registered Email</label>
+          <input type="email" id="forgot-email" class="form-control" placeholder="name@hospital.com" required>
+        </div>
+        <div class="form-group">
+          <label for="forgot-newPassword">New Security Password</label>
+          <input type="password" id="forgot-newPassword" class="form-control" placeholder="••••••••" required autocomplete="new-password">
+        </div>
+        <button type="submit" class="btn btn-primary" style="margin-top: 15px;">RESET PASSWORD</button>
+      </form>
+      <div class="auth-links">
+        <a href="#" id="forgot-to-login">Cancel and Return to Login</a>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ========================================== -->
+  <!-- 3. MAIN APP SHELL                          -->
+  <!-- ========================================== -->
+  <div id="app-shell" class="app-container" style="display: none;">
+    
+    <!-- LEFT SIDEBAR -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <div class="logo-icon"><i class="fa-solid fa-heart-pulse"></i></div>
+        <h1>ICU SUITE PRO</h1>
+      </div>
+      
+      <div class="sidebar-user">
+        <div class="sidebar-user-avatar" id="user-avatar-char">D</div>
+        <div class="sidebar-user-info">
+          <div class="sidebar-user-name" id="user-display-name">Dr. Smith</div>
+          <div class="sidebar-user-role" id="user-display-role">Doctor (Staff ID: admin)</div>
+        </div>
+      </div>
+
+      <ul class="sidebar-menu">
+        <li class="menu-item">
+          <a class="menu-link active" data-view="dashboard">
+            <i class="fa-solid fa-chart-line"></i>
+            <span>Overview Dashboard</span>
+          </a>
+        </li>
+        <li class="menu-item">
+          <a class="menu-link" data-view="patient_management">
+            <i class="fa-solid fa-bed-pulse"></i>
+            <span>Patient Management</span>
+          </a>
+        </li>
+        <li class="menu-item">
+          <a class="menu-link" data-view="dose_calculator">
+            <i class="fa-solid fa-calculator"></i>
+            <span>Dose Calculator</span>
+          </a>
+        </li>
+        <li class="menu-item">
+          <a class="menu-link" data-view="scoring">
+            <i class="fa-solid fa-list-check"></i>
+            <span>SOFA Clinical Scoring</span>
+          </a>
+        </li>
+        <li class="menu-item">
+          <a class="menu-link" data-view="interaction_checker">
+            <i class="fa-solid fa-triangle-exclamation"></i>
+            <span>Interaction Checker</span>
+          </a>
+        </li>
+        <li class="menu-item">
+          <a class="menu-link" data-view="drug_database">
+            <i class="fa-solid fa-book-medical"></i>
+            <span>Drug Reference</span>
+          </a>
+        </li>
+        <li class="menu-item">
+          <a class="menu-link" data-view="prescriptions">
+            <i class="fa-solid fa-file-prescription"></i>
+            <span>Prescriptions</span>
+          </a>
+        </li>
+        <li class="menu-item">
+          <a class="menu-link" data-view="analytics">
+            <i class="fa-solid fa-chart-pie"></i>
+            <span>Medication Analytics</span>
+          </a>
+        </li>
+        
+        <li class="menu-divider"></li>
+
+        <li class="menu-item">
+          <a class="menu-link" data-view="audit_logs">
+            <i class="fa-solid fa-clock-rotate-left"></i>
+            <span>Audit History Logs</span>
+          </a>
+        </li>
+        <li class="menu-item">
+          <a class="menu-link" data-view="config">
+            <i class="fa-solid fa-gears"></i>
+            <span>Database Config</span>
+          </a>
+        </li>
+        <li class="menu-item">
+          <a class="menu-link logout" id="logout-btn">
+            <i class="fa-solid fa-right-from-bracket"></i>
+            <span>Logout Staff</span>
+          </a>
+        </li>
+      </ul>
+    </aside>
+
+    <!-- RIGHT MAIN WINDOW -->
+    <main class="main-wrapper">
+      
+      <!-- Top header bar -->
+      <header class="app-header">
+        <div class="header-title-area">
+          <button class="menu-toggle-btn" id="menu-toggle"><i class="fa-solid fa-bars"></i></button>
+          <h2 id="view-title">Overview Dashboard</h2>
+        </div>
+        <div class="header-actions">
+          <button class="header-btn" id="sync-server-btn" title="Sync with MongoDB Server">
+            <i class="fa-solid fa-arrows-rotate"></i>
+          </button>
+          <button class="header-btn" id="theme-toggle-btn" title="Toggle Dark/Light Mode">
+            <i class="fa-solid fa-moon"></i>
+          </button>
+          <button class="header-btn" id="notification-bell" title="System Notifications">
+            <i class="fa-solid fa-bell"></i>
+            <span class="badge-dot" style="display: none;"></span>
+          </button>
+        </div>
+      </header>
+
+      <!-- View Containers -->
+      <div class="view-container">
+        
+        <!-- ========================================== -->
+        <!-- VIEW: DASHBOARD OVERVIEW                   -->
+        <!-- ========================================== -->
+        <section id="view-dashboard" class="view-section active">
+          
+          <div class="welcome-section">
+            <h3>Clinical Command Center</h3>
+            <p>Real-time ICU ward overview and monitoring</p>
+          </div>
+
+          <!-- Alert box for critical patients -->
+          <div id="critical-patients-alert" class="card" style="background-color: rgba(239, 68, 68, 0.08); border-color: var(--error); display: none; margin-bottom: 24px; padding: 18px 24px;">
+            <div style="display: flex; align-items: center; justify-content: space-between; gap: 16px;">
+              <div style="display: flex; align-items: center; gap: 12px;">
+                <i class="fa-solid fa-triangle-exclamation" style="color: var(--error); font-size: 1.5rem;"></i>
+                <div>
+                  <h4 style="color: var(--error); font-family: var(--font-title); font-weight: 700;">CRITICAL STATUS ALERT</h4>
+                  <p id="critical-patients-text" style="color: var(--text-secondary); font-size: 0.88rem;"></p>
+                </div>
+              </div>
+              <button class="btn btn-danger" style="width: auto; padding: 8px 16px;" onclick="switchView('patient_management')">ATTEND NOW</button>
+            </div>
+          </div>
+
+          <div class="overview-banner">
+            <div class="banner-content">
+              <h4>Clinical Emergency Protocol</h4>
+              <p>Immediately broadcast warning alerts across all ward channels</p>
+            </div>
+            <div class="banner-actions">
+              <button class="banner-btn-emergency" onclick="switchView('emergency')"><i class="fa-solid fa-circle-exclamation"></i> EMERGENCY ALERTS</button>
+            </div>
+          </div>
+
+          <div class="stats-grid">
+            <div class="card">
+              <div class="stat-card-header">
+                <span class="stat-card-title">Active Admissions</span>
+                <div class="stat-card-icon" style="background-color: rgba(13, 71, 161, 0.1); color: var(--primary);">
+                  <i class="fa-solid fa-user-injured"></i>
+                </div>
+              </div>
+              <div class="stat-card-value" id="stat-active-patients">0</div>
+              <div class="stat-card-trend" style="color: var(--accent);"><i class="fa-solid fa-bed"></i> 50 Total Bed Slots</div>
+            </div>
+
+            <div class="card">
+              <div class="stat-card-header">
+                <span class="stat-card-title">Critical Patients</span>
+                <div class="stat-card-icon" style="background-color: rgba(239, 68, 68, 0.1); color: var(--error);">
+                  <i class="fa-solid fa-wave-square"></i>
+                </div>
+              </div>
+              <div class="stat-card-value" id="stat-critical-patients" style="color: var(--error);">0</div>
+              <div class="stat-card-trend" style="color: var(--error); font-weight: 600;" id="stat-critical-desc">No immediate danger</div>
+            </div>
+
+            <div class="card">
+              <div class="stat-card-header">
+                <span class="stat-card-title">Bed Occupancy</span>
+                <div class="stat-card-icon" style="background-color: rgba(0, 176, 255, 0.1); color: var(--secondary);">
+                  <i class="fa-solid fa-percent"></i>
+                </div>
+              </div>
+              <div class="stat-card-value" id="stat-occupancy-percent">0%</div>
+              <div class="stat-card-trend" id="stat-occupancy-desc" style="color: var(--text-secondary);">0 beds occupied</div>
+            </div>
+
+            <div class="card">
+              <div class="stat-card-header">
+                <span class="stat-card-title">Avg. SOFA Score</span>
+                <div class="stat-card-icon" style="background-color: rgba(245, 158, 11, 0.1); color: var(--warning);">
+                  <i class="fa-solid fa-clipboard-check"></i>
+                </div>
+              </div>
+              <div class="stat-card-value" id="stat-avg-sofa">0</div>
+              <div class="stat-card-trend" id="stat-sofa-desc" style="color: var(--accent);">Normal baseline risk</div>
+            </div>
+          </div>
+
+          <div class="dashboard-split">
+            <!-- Handover notes -->
+            <div class="card">
+              <div class="split-card-header">
+                <h3><i class="fa-solid fa-clipboard-user"></i> Shift Handover Report</h3>
+                <span class="badge" style="background-color: var(--primary-light); color: var(--primary); padding: 4px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: bold;">Editable</span>
+              </div>
+              <textarea class="handover-text" id="handover-text-box" placeholder="Describe current ward status, incoming critical cases, pending procedures, and staff assignments..."></textarea>
+              <button class="btn btn-primary" id="save-handover-btn" style="width: auto; padding: 10px 20px;"><i class="fa-solid fa-floppy-disk"></i> SAVE HANDOVER</button>
+            </div>
+
+            <!-- Recent activity logs -->
+            <div class="card">
+              <div class="split-card-header">
+                <h3><i class="fa-solid fa-list-ul"></i> Recent Clinical Activity</h3>
+                <a href="#" style="font-size: 0.8rem; text-decoration: none; color: var(--primary);" onclick="switchView('audit_logs')">View Logs</a>
+              </div>
+              <div class="timeline" id="dashboard-activity-timeline">
+                <!-- Timelines populated dynamically -->
+              </div>
+            </div>
+          </div>
+
+        </section>
+
+        <!-- ========================================== -->
+        <!-- VIEW: PATIENT MANAGEMENT                   -->
+        <!-- ========================================== -->
+        <section id="view-patient_management" class="view-section">
+          
+          <div class="split-view-management">
+            
+            <!-- Bed Layout and grid -->
+            <div class="card">
+              <div class="bed-layout-header">
+                <h3 style="font-family: var(--font-title); font-weight: 700;"><i class="fa-solid fa-network-wired"></i> Ward Bed Grid Map</h3>
+                <div class="bed-legend">
+                  <div class="legend-item"><div class="legend-color" style="background-color: var(--accent);"></div><span>Stable</span></div>
+                  <div class="legend-item"><div class="legend-color" style="background-color: var(--warning);"></div><span>Recovering</span></div>
+                  <div class="legend-item"><div class="legend-color" style="background-color: var(--error);"></div><span>Critical</span></div>
+                  <div class="legend-item"><div class="legend-color" style="border: 1px dashed var(--text-secondary); background: transparent;"></div><span>Vacant</span></div>
+                </div>
+              </div>
+              
+              <!-- 50 Bed slots -->
+              <div class="bed-grid" id="ward-bed-grid">
+                <!-- Populated dynamically via JS loop -->
+              </div>
+            </div>
+
+            <!-- Patient Detail Panel / Admission Form -->
+            <div class="card patient-detail-card" id="patient-detail-panel">
+              <!-- Content replaced dynamically: either Admission form or patient summary card -->
+            </div>
+
+          </div>
+
+        </section>
+
+        <!-- ========================================== -->
+        <!-- VIEW: DOSE CALCULATOR                      -->
+        <!-- ========================================== -->
+        <section id="view-dose_calculator" class="view-section">
+          
+          <div class="calc-container">
+            
+            <!-- Calculator input card -->
+            <div class="card">
+              <div class="split-card-header">
+                <h3><i class="fa-solid fa-calculator"></i> Dose Calculator Parameters</h3>
+              </div>
+              <form id="dose-calc-form">
+                <div class="form-group">
+                  <label for="calc-weight">Patient Weight (kg)</label>
+                  <input type="number" id="calc-weight" class="form-control" placeholder="e.g. 70" required min="1" max="300" step="0.1">
+                </div>
+                <div class="form-group">
+                  <label for="calc-med">Select Dosing Medication</label>
+                  <select id="calc-med" required>
+                    <!-- Options populated dynamically -->
+                  </select>
+                </div>
+                <div id="calc-warning-banner" style="background-color: rgba(245,158,11,0.1); border-left: 4px solid var(--warning); padding: 12px; font-size: 0.85rem; color: var(--text-primary); margin-bottom: 20px; border-radius: 4px; display: none;">
+                  <!-- Warning displays here -->
+                </div>
+                <button type="button" class="btn btn-primary" id="calculate-dose-btn"><i class="fa-solid fa-bolt"></i> CALCULATE CLINICAL DOSE</button>
+              </form>
+            </div>
+
+            <!-- Calculator result card -->
+            <div class="card" style="display: flex; flex-direction: column; justify-content: space-between;">
+              <div class="split-card-header">
+                <h3><i class="fa-solid fa-circle-nodes"></i> Calculation Output</h3>
+              </div>
+              <div class="result-calc-box">
+                <div style="font-size: 0.9rem; font-weight: 600; color: var(--text-secondary); text-transform: uppercase;">Calculated Dose Dose</div>
+                <div id="calc-output-value" class="result-calc-value">0.00 mg</div>
+                <div id="calc-output-infusion" class="result-calc-infusion"></div>
+              </div>
+              <div style="margin-top: 20px;">
+                <h4 style="font-size: 0.9rem; font-family: var(--font-title); font-weight: 700; margin-bottom: 6px;">Physiological Guidance Note:</h4>
+                <p id="calc-output-guidance" style="font-size: 0.82rem; color: var(--text-secondary); line-height: 1.4;">Select medication and enter a physiological patient weight to view dosing alerts.</p>
+              </div>
+            </div>
+
+          </div>
+
+        </section>
+
+        <!-- ========================================== -->
+        <!-- VIEW: CLINICAL SCORING                     -->
+        <!-- ========================================== -->
+        <section id="view-scoring" class="view-section">
+          
+          <div class="calc-container">
+            
+            <!-- Scoring Input Selection -->
+            <div class="card">
+              <div class="split-card-header">
+                <h3><i class="fa-solid fa-list-check"></i> Sequential Organ Failure Assessment (SOFA)</h3>
+              </div>
+              <div class="form-group">
+                <label for="sofa-patient-select">Load Patient clinical data</label>
+                <select id="sofa-patient-select">
+                  <option value="">-- Choose Patient to Autofill --</option>
+                  <!-- Populated dynamically -->
+                </select>
+              </div>
+              
+              <div style="margin-top: 24px;">
+                <!-- Respiratory score selection -->
+                <div class="form-group">
+                  <label>Respiratory: PaO2/FiO2 Ratio (mmHg)</label>
+                  <div class="score-group-row" id="sofa-resp">
+                    <div class="score-chip active" data-score="0">0 (Normal)</div>
+                    <div class="score-chip" data-score="1">1 (<400)</div>
+                    <div class="score-chip" data-score="2">2 (<300)</div>
+                    <div class="score-chip" data-score="3">3 (<200)</div>
+                    <div class="score-chip" data-score="4">4 (<100)</div>
+                  </div>
+                </div>
+
+                <!-- Cardiovascular score selection -->
+                <div class="form-group">
+                  <label>Cardiovascular: MAP or Vasopressors</label>
+                  <div class="score-group-row" id="sofa-cardio">
+                    <div class="score-chip active" data-score="0">0 (Normal)</div>
+                    <div class="score-chip" data-score="1">1 (MAP <70)</div>
+                    <div class="score-chip" data-score="2">2 (Dop or Dob)</div>
+                    <div class="score-chip" data-score="3">3 (Epi or Norepi)</div>
+                    <div class="score-chip" data-score="4">4 (High Dose)</div>
+                  </div>
+                </div>
+
+                <!-- Liver score selection -->
+                <div class="form-group">
+                  <label>Liver: Bilirubin (mg/dL)</label>
+                  <div class="score-group-row" id="sofa-liver">
+                    <div class="score-chip active" data-score="0">0 (<1.2)</div>
+                    <div class="score-chip" data-score="1">1 (1.2-1.9)</div>
+                    <div class="score-chip" data-score="2">2 (2.0-5.9)</div>
+                    <div class="score-chip" data-score="3">3 (6.0-11.9)</div>
+                    <div class="score-chip" data-score="4">4 (≥12.0)</div>
+                  </div>
+                </div>
+
+                <!-- Coagulation score selection -->
+                <div class="form-group">
+                  <label>Coagulation: Platelets (x10^3/µL)</label>
+                  <div class="score-group-row" id="sofa-coag">
+                    <div class="score-chip active" data-score="0">0 (≥150)</div>
+                    <div class="score-chip" data-score="1">1 (<150)</div>
+                    <div class="score-chip" data-score="2">2 (<100)</div>
+                    <div class="score-chip" data-score="3">3 (<50)</div>
+                    <div class="score-chip" data-score="4">4 (<20)</div>
+                  </div>
+                </div>
+
+                <!-- Renal score selection -->
+                <div class="form-group">
+                  <label>Renal: Creatinine (mg/dL) or Urine Output</label>
+                  <div class="score-group-row" id="sofa-renal">
+                    <div class="score-chip active" data-score="0">0 (<1.2)</div>
+                    <div class="score-chip" data-score="1">1 (1.2-1.9)</div>
+                    <div class="score-chip" data-score="2">2 (2.0-3.4)</div>
+                    <div class="score-chip" data-score="3">3 (3.5-4.9)</div>
+                    <div class="score-chip" data-score="4">4 (≥5.0)</div>
+                  </div>
+                </div>
+
+                <!-- CNS score selection -->
+                <div class="form-group">
+                  <label>CNS: Glasgow Coma Scale (GCS) Score</label>
+                  <div class="score-group-row" id="sofa-cns">
+                    <div class="score-chip active" data-score="0">0 (15)</div>
+                    <div class="score-chip" data-score="1">1 (13-14)</div>
+                    <div class="score-chip" data-score="2">2 (10-12)</div>
+                    <div class="score-chip" data-score="3">3 (6-9)</div>
+                    <div class="score-chip" data-score="4">4 (<6)</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Scoring Result Card -->
+            <div class="card" style="display: flex; flex-direction: column; justify-content: space-between;">
+              <div class="split-card-header">
+                <h3><i class="fa-solid fa-clipboard-check"></i> Score Assessment</h3>
+              </div>
+              <div class="sofa-summary-container risk-low" id="sofa-risk-container">
+                <div style="font-size: 0.95rem; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase;">Total SOFA Score</div>
+                <div class="sofa-total-val" id="sofa-total-score">0</div>
+                <div style="font-weight: 700; font-size: 1.1rem; margin-top: 8px;" id="sofa-risk-text">LOW MORTALITY RISK (<10%)</div>
+              </div>
+              <div style="margin-top: 24px;">
+                <h4 style="font-size: 0.95rem; font-family: var(--font-title); font-weight: 700; margin-bottom: 8px;">Clinical Scoring Context</h4>
+                <p style="font-size: 0.85rem; color: var(--text-secondary); line-height: 1.5; margin-bottom: 20px;">
+                  The SOFA score tracks clinical organ failure rates inside intensive care units. An increasing score indicates progressive clinical decline and potential multiorgan dysfunction.
+                </p>
+                <button class="btn btn-primary" id="save-sofa-history-btn" style="display: none;"><i class="fa-solid fa-clock-rotate-left"></i> SAVE TO PATIENT HISTORY</button>
+              </div>
+            </div>
+
+          </div>
+
+        </section>
+
+        <!-- ========================================== -->
+        <!-- VIEW: INTERACTION CHECKER                  -->
+        <!-- ========================================== -->
+        <section id="view-interaction_checker" class="view-section">
+          
+          <div class="card">
+            <div class="split-card-header">
+              <h3><i class="fa-solid fa-triangle-exclamation"></i> Drug Interaction Diagnostic</h3>
+              <span class="badge" style="background-color: var(--primary-light); color: var(--primary); padding: 4px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: bold;" id="interaction-count-badge">0 Selected</span>
+            </div>
+            <p style="color: var(--text-secondary); margin-bottom: 20px; font-size: 0.9rem;">
+              Select multiple medications below to dynamically analyze potential clinical interactions, adverse reactions, and warnings.
+            </p>
+            
+            <div class="drug-checker-grid" id="checker-drug-grid">
+              <!-- Populated dynamically via JS -->
+            </div>
+
+            <div class="interaction-warning-box" id="interaction-warning-container" style="display: none;">
+              <h4 style="font-family: var(--font-title); font-weight: 700; margin-bottom: 8px;">CLINICAL CONTRAINDICATIONS & WARNINGS:</h4>
+              <div id="interaction-warnings-list" style="display: flex; flex-direction: column; gap: 8px;">
+                <!-- Populated dynamically -->
+              </div>
+            </div>
+
+            <div id="interaction-safe-box" style="background-color: rgba(16, 185, 129, 0.08); border: 1px solid var(--accent); border-radius: 12px; padding: 18px; color: var(--accent); margin-top: 20px; display: flex; align-items: center; gap: 12px;">
+              <i class="fa-solid fa-circle-check" style="font-size: 1.25rem;"></i>
+              <span style="font-size: 0.9rem; font-weight: 600;">No severe drug-to-drug interactions detected for the currently selected medication regimen.</span>
+            </div>
+          </div>
+
+        </section>
+
+        <!-- ========================================== -->
+        <!-- VIEW: DRUG DATABASE                       -->
+        <!-- ========================================== -->
+        <section id="view-drug_database" class="view-section">
+          
+          <div class="card">
+            <div class="split-card-header">
+              <h3><i class="fa-solid fa-book-medical"></i> ICU Medication Reference Index</h3>
+            </div>
+            <div class="drug-db-list" id="drug-reference-list">
+              <!-- Populated dynamically -->
+            </div>
+          </div>
+
+        </section>
+
+        <!-- ========================================== -->
+        <!-- VIEW: PRESCRIPTIONS                        -->
+        <!-- ========================================== -->
+        <section id="view-prescriptions" class="view-section">
+          
+          <div class="calc-container">
+            
+            <!-- Create Prescription -->
+            <div class="card">
+              <div class="split-card-header">
+                <h3><i class="fa-solid fa-prescription"></i> Authorize ICU Medication</h3>
+              </div>
+              <form id="prescription-form">
+                <div class="form-group">
+                  <label for="presc-patient">Select Patient</label>
+                  <select id="presc-patient" required>
+                    <option value="">-- Select Bed Occupant --</option>
+                    <!-- Populated dynamically -->
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label for="presc-med">Select Medication</label>
+                  <select id="presc-med" required>
+                    <option value="">-- Choose Drug --</option>
+                    <!-- Populated dynamically -->
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label for="presc-dose">Dose instructions</label>
+                  <input type="text" id="presc-dose" class="form-control" placeholder="e.g. 140 mg IV Push or Infuse 0.05 mcg/kg/min" required>
+                </div>
+                <button type="submit" class="btn btn-primary"><i class="fa-solid fa-file-signature"></i> AUTHORIZE PRESCRIPTION</button>
+              </form>
+            </div>
+
+            <!-- Prescriptions List -->
+            <div class="card">
+              <div class="split-card-header">
+                <h3><i class="fa-solid fa-file-prescription"></i> Active Orders</h3>
+              </div>
+              <div class="table-responsive">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Patient</th>
+                      <th>Medication</th>
+                      <th>Dosing details</th>
+                      <th>Time Assigned</th>
+                    </tr>
+                  </thead>
+                  <tbody id="prescriptions-table-body">
+                    <!-- Populated dynamically -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+          </div>
+
+        </section>
+
+        <!-- ========================================== -->
+        <!-- VIEW: MEDICATION ANALYTICS                -->
+        <!-- ========================================== -->
+        <section id="view-analytics" class="view-section">
+          
+          <div class="analytics-grid">
+            
+            <!-- Chart 1: Categories -->
+            <div class="card">
+              <div class="split-card-header">
+                <h3><i class="fa-solid fa-chart-simple"></i> Prescriptions by Class</h3>
+              </div>
+              <div class="custom-chart-wrapper" id="chart-med-classes">
+                <!-- Bars populated dynamically via JS -->
+              </div>
+            </div>
+
+            <!-- Chart 2: Drug usage count -->
+            <div class="card">
+              <div class="split-card-header">
+                <h3><i class="fa-solid fa-chart-column"></i> Active Medication Load</h3>
+              </div>
+              <div class="custom-chart-wrapper" id="chart-med-usage">
+                <!-- Bars populated dynamically via JS -->
+              </div>
+            </div>
+
+          </div>
+
+        </section>
+
+        <!-- ========================================== -->
+        <!-- VIEW: AUDIT LOGS                          -->
+        <!-- ========================================== -->
+        <section id="view-audit_logs" class="view-section">
+          
+          <div class="card">
+            <div class="split-card-header">
+              <h3><i class="fa-solid fa-clock-rotate-left"></i> System Security & Audit Timelines</h3>
+            </div>
+            <div class="timeline" id="full-audit-timeline" style="margin-top: 10px;">
+              <!-- Timelines populated dynamically -->
+            </div>
+          </div>
+
+        </section>
+
+        <!-- ========================================== -->
+        <!-- VIEW: EMERGENCY                            -->
+        <!-- ========================================== -->
+        <section id="view-emergency" class="view-section">
+          
+          <div class="card" style="border-color: var(--error); background-color: rgba(239, 68, 68, 0.02); margin-bottom: 24px;">
+            <h3 style="font-family: var(--font-title); color: var(--error); margin-bottom: 12px;"><i class="fa-solid fa-circle-exclamation"></i> Ward Critical Alerts Console</h3>
+            <p style="color: var(--text-secondary); font-size: 0.9rem;">
+              Selecting any trigger below broadcasts an immediate alert across the hospital telemetry and logs a permanent system audit record. Use with extreme caution.
+            </p>
+          </div>
+
+          <div class="emergency-grid">
+            <div class="emergency-btn-card" onclick="triggerEmergencyAlert('CODE BLUE (Cardiac Arrest)')">
+              <i class="fa-solid fa-heart-crack"></i>
+              <h3>CODE BLUE</h3>
+              <p>Cardiac or Respiratory Arrest</p>
+            </div>
+            <div class="emergency-btn-card" onclick="triggerEmergencyAlert('Intubation Request')">
+              <i class="fa-solid fa-mask-ventilator"></i>
+              <h3>INTUBATE</h3>
+              <p>Airway Compromise/Fail</p>
+            </div>
+            <div class="emergency-btn-card" onclick="triggerEmergencyAlert('Ventilator Disconnect/Failure')">
+              <i class="fa-solid fa-triangle-exclamation"></i>
+              <h3>VENT FAIL</h3>
+              <p>Critical Ventilator Shutdown</p>
+            </div>
+            <div class="emergency-btn-card" onclick="triggerEmergencyAlert('Severe Bleed / Massive Transfusion')">
+              <i class="fa-solid fa-droplet"></i>
+              <h3>MASSIVE BLEED</h3>
+              <p>Hemorrhagic Shock Protocol</p>
+            </div>
+          </div>
+
+        </section>
+
+        <!-- ========================================== -->
+        <!-- VIEW: DATABASE CONFIGURATION               -->
+        <!-- ========================================== -->
+        <section id="view-config" class="view-section">
+          
+          <div class="card" style="max-width: 600px; margin: 0 auto;">
+            <div class="split-card-header">
+              <h3><i class="fa-solid fa-database"></i> MongoDB Atlas Configuration</h3>
+            </div>
+            <div class="config-info-box">
+              <i class="fa-solid fa-circle-info"></i>
+              <span>Configuring your MongoDB Atlas Data API details enables real-time synchronization between the web app and your secure cloud database servers.</span>
+            </div>
+            <form id="config-form">
+              <div class="form-group">
+                <label for="config-appId">MongoDB App ID</label>
+                <input type="text" id="config-appId" class="form-control" placeholder="e.g. data-xyz12">
+              </div>
+              <div class="form-group">
+                <label for="config-apiKey">MongoDB Atlas API Key</label>
+                <input type="password" id="config-apiKey" class="form-control" placeholder="••••••••••••••••">
+              </div>
+              <button type="submit" class="btn btn-primary" style="margin-top: 10px;"><i class="fa-solid fa-arrows-spin"></i> SAVE & SYNC DATABASE</button>
+            </form>
+          </div>
+
+        </section>
+
+      </div>
+    </main>
+
+  </div>
+
+  <!-- Clinical Report Modal -->
+  <div id="clinical-report-modal" class="auth-wrapper" style="display: none; background: rgba(15, 23, 42, 0.85); z-index: 1001;">
+    <div class="auth-card" style="max-width: 600px; width: 90%; background: var(--surface); color: var(--text-primary); border: 1px solid var(--border);">
+      <div class="split-card-header" style="border-bottom: 1px solid var(--border); padding-bottom: 12px; margin-bottom: 16px;">
+        <h3 style="font-family: var(--font-title); font-weight: 800; color: var(--primary);"><i class="fa-solid fa-file-medical"></i> Secure Clinical Summary</h3>
+        <button class="header-btn" onclick="closeReportModal()"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div id="clinical-report-modal-content" style="max-height: 400px; overflow-y: auto; margin: 20px 0; padding-right: 8px;">
+        <!-- Filled by JS -->
+      </div>
+      <div style="display: flex; gap: 12px; border-top: 1px solid var(--border); padding-top: 16px;">
+        <button class="btn btn-primary" onclick="printClinicalReport()"><i class="fa-solid fa-print"></i> PRINT REPORT</button>
+        <button class="btn btn-secondary" onclick="closeReportModal()">CLOSE</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Real-time Alert popup banner -->
+  <div id="popup-alert-banner" class="notification-banner-alert" style="display: none;">
+    <i class="fa-solid fa-triangle-exclamation" style="font-size: 1.5rem;"></i>
+    <div>
+      <h5 style="font-family: var(--font-title); font-weight: 700;">WARD EMERGENCY ALARM</h5>
+      <span id="popup-alert-message" style="font-size: 0.8rem; opacity: 0.9;"></span>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,35 @@
+[
+  {
+    "id": "m1",
+    "name": "Propofol",
+    "category": "Anesthetic",
+    "standardDosePerKg": 2.0,
+    "minDosePerKg": 1.5,
+    "maxDosePerKg": 2.5,
+    "unit": "mg",
+    "warning": "Monitor for Propofol Infusion Syndrome.",
+    "interactions": ["m2", "m3", "m4"]
+  },
+  {
+    "id": "m2",
+    "name": "Midazolam",
+    "category": "Sedative",
+    "standardDosePerKg": 0.05,
+    "minDosePerKg": 0.02,
+    "maxDosePerKg": 0.1,
+    "unit": "mg",
+    "warning": "High risk of respiratory depression.",
+    "interactions": ["m1", "m3"]
+  },
+  {
+    "id": "m3",
+    "name": "Fentanyl",
+    "category": "Analgesic",
+    "standardDosePerKg": 1.0,
+    "minDosePerKg": 0.5,
+    "maxDosePerKg": 2.0,
+    "unit": "mcg",
+    "warning": "Monitor respiratory rate closely.",
+    "interactions": ["m1", "m2"]
+  }
+]

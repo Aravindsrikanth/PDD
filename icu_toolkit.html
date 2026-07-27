@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ICU Toolkit</title>
+    <style>
+        :root {
+            --primary: #6366f1;
+            --secondary: #14b8a6;
+            --bg: #0f172a;
+            --surface: #1e293b;
+            --text: #f8fafc;
+            --text-sec: #94a3b8;
+            --error: #ef4444;
+        }
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .container { width: 100%; max-width: 500px; }
+        .card {
+            background-color: var(--surface);
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            border: 1px solid #334155;
+        }
+        h1 { color: var(--primary); text-align: center; margin-bottom: 30px; }
+        h2 { margin-top: 0; font-size: 1.2rem; color: var(--secondary); display: flex; align-items: center; gap: 10px; }
+        label { display: block; margin-bottom: 8px; font-size: 0.9rem; color: var(--text-sec); }
+        input, select {
+            width: 100%;
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid #334155;
+            background-color: #0f172a;
+            color: white;
+            margin-bottom: 15px;
+            box-sizing: border-box;
+        }
+        .result-box {
+            text-align: center;
+            padding: 20px;
+            background: rgba(99, 102, 241, 0.1);
+            border-radius: 12px;
+            border: 1px dashed var(--primary);
+            margin-top: 10px;
+        }
+        .result-val { font-size: 2rem; font-weight: bold; margin: 10px 0; }
+        .warning { color: var(--error); border-color: var(--error); background: rgba(239, 68, 68, 0.1); }
+        .btn-group { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 15px; }
+        .chip {
+            padding: 6px 12px;
+            background: #334155;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            transition: 0.3s;
+        }
+        .chip.active { background: var(--primary); color: white; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>ICU Toolkit</h1>
+
+        <!-- DOSE CALCULATOR -->
+        <div class="card">
+            <h2>Dose Calculator</h2>
+            <label>Patient Weight (kg)</label>
+            <input type="number" id="weight" placeholder="e.g. 70" oninput="calculateAll()">
+
+            <label>Select Medication</label>
+            <select id="drug" onchange="calculateAll()">
+                <option value="2.0">Propofol (2 mg/kg)</option>
+                <option value="0.05">Midazolam (0.05 mg/kg)</option>
+                <option value="0.001">Fentanyl (1 mcg/kg)</option>
+                <option value="0.05_inf">Norepinephrine (0.05 mcg/kg/min)</option>
+            </select>
+
+            <div id="doseResultBox" class="result-box">
+                <div style="font-size: 0.8rem; color: var(--text-sec);">Calculated Dose</div>
+                <div id="doseValue" class="result-val">0.00</div>
+                <div id="infusionRate" style="color: var(--secondary); font-weight: bold;"></div>
+            </div>
+        </div>
+
+        <!-- MAP CALCULATOR -->
+        <div class="card">
+            <h2>MAP Calculator</h2>
+            <div style="display: flex; gap: 10px;">
+                <div style="flex: 1;">
+                    <label>Systolic (mmHg)</label>
+                    <input type="number" id="sys" placeholder="120" oninput="calculateAll()">
+                </div>
+                <div style="flex: 1;">
+                    <label>Diastolic (mmHg)</label>
+                    <input type="number" id="dia" placeholder="80" oninput="calculateAll()">
+                </div>
+            </div>
+            <div id="mapResultBox" class="result-box">
+                <div style="font-size: 0.8rem; color: var(--text-sec);">Mean Arterial Pressure</div>
+                <div id="mapValue" class="result-val">0.0</div>
+                <div id="mapStatus">--</div>
+            </div>
+        </div>
+
+        <!-- GCS SCORE -->
+        <div class="card">
+            <h2>GCS Score</h2>
+            <label>Eye Response (1-4)</label>
+            <div class="btn-group" id="eyeGroup">
+                <div class="chip active" onclick="setGCS('eye', 4, this)">4</div>
+                <div class="chip" onclick="setGCS('eye', 3, this)">3</div>
+                <div class="chip" onclick="setGCS('eye', 2, this)">2</div>
+                <div class="chip" onclick="setGCS('eye', 1, this)">1</div>
+            </div>
+            <label>Verbal Response (1-5)</label>
+            <div class="btn-group" id="verbalGroup">
+                <div class="chip active" onclick="setGCS('verbal', 5, this)">5</div>
+                <div class="chip" onclick="setGCS('verbal', 4, this)">4</div>
+                <div class="chip" onclick="setGCS('verbal', 3, this)">3</div>
+                <div class="chip" onclick="setGCS('verbal', 2, this)">2</div>
+                <div class="chip" onclick="setGCS('verbal', 1, this)">1</div>
+            </div>
+            <label>Motor Response (1-6)</label>
+            <div class="btn-group" id="motorGroup">
+                <div class="chip active" onclick="setGCS('motor', 6, this)">6</div>
+                <div class="chip" onclick="setGCS('motor', 5, this)">5</div>
+                <div class="chip" onclick="setGCS('motor', 4, this)">4</div>
+                <div class="chip" onclick="setGCS('motor', 3, this)">3</div>
+                <div class="chip" onclick="setGCS('motor', 2, this)">2</div>
+                <div class="chip" onclick="setGCS('motor', 1, this)">1</div>
+            </div>
+            <div class="result-box">
+                <div id="gcsValue" class="result-val">15 / 15</div>
+                <div id="gcsStatus" style="color: var(--secondary);">Mild</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let gcs = { eye: 4, verbal: 5, motor: 6 };
+
+        function setGCS(type, val, el) {
+            gcs[type] = val;
+            const parent = el.parentElement;
+            Array.from(parent.children).forEach(c => c.classList.remove('active'));
+            el.classList.add('active');
+            calculateAll();
+        }
+
+        function calculateAll() {
+            // Dose
+            const weight = parseFloat(document.getElementById('weight').value) || 0;
+            const drugVal = document.getElementById('drug').value;
+            const isInf = drugVal.includes('_inf');
+            const dosePerKg = parseFloat(drugVal);
+
+            const dose = weight * dosePerKg;
+            document.getElementById('doseValue').innerText = dose.toFixed(2) + (drugVal.includes('0.001') ? ' mcg' : ' mg');
+
+            if (isInf && weight > 0) {
+                // Example for Norepinephrine: 0.05 mcg/kg/min
+                // Conc: 0.016 mg/ml (16 mcg/ml)
+                const rate = (dose / 16) * 60;
+                document.getElementById('infusionRate').innerText = 'Infusion: ' + rate.toFixed(2) + ' mL/hr';
+            } else {
+                document.getElementById('infusionRate').innerText = '';
+            }
+
+            // MAP
+            const sys = parseFloat(document.getElementById('sys').value) || 0;
+            const dia = parseFloat(document.getElementById('dia').value) || 0;
+            if (sys > 0 && dia > 0) {
+                const map = (sys + (2 * dia)) / 3;
+                document.getElementById('mapValue').innerText = map.toFixed(1);
+                const status = document.getElementById('mapStatus');
+                const box = document.getElementById('mapResultBox');
+                if (map < 65) {
+                    status.innerText = 'LOW PERFUSION';
+                    status.style.color = 'var(--error)';
+                    box.classList.add('warning');
+                } else {
+                    status.innerText = 'NORMAL';
+                    status.style.color = 'var(--secondary)';
+                    box.classList.remove('warning');
+                }
+            }
+
+            // GCS
+            const total = gcs.eye + gcs.verbal + gcs.motor;
+            document.getElementById('gcsValue').innerText = total + ' / 15';
+            const gStatus = document.getElementById('gcsStatus');
+            if (total <= 8) { gStatus.innerText = 'SEVERE (COMA)'; gStatus.style.color = 'var(--error)'; }
+            else if (total <= 12) { gStatus.innerText = 'MODERATE'; gStatus.style.color = 'orange'; }
+            else { gStatus.innerText = 'MILD'; gStatus.style.color = 'var(--secondary)'; }
+        }
+    </script>
+</body>
+</html>
