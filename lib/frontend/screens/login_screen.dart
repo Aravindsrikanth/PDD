@@ -72,35 +72,79 @@ class _MedicalLoginScreenState extends State<MedicalLoginScreen> {
           Text("ICU SUITE", style: GoogleFonts.outfit(fontSize: 32, fontWeight: FontWeight.bold, color: const Color(0xFF0D47A1))),
           Text("Professional Clinical Gateway", style: GoogleFonts.poppins(fontSize: 14, color: Colors.grey[600])),
           const SizedBox(height: 40),
+          
           DropdownButtonFormField<String>(
             initialValue: _selectedRole,
-            decoration: const InputDecoration(labelText: 'System Role', border: UnderlineInputBorder()),
-            items: ['Doctor', 'Nurse', 'Admin'].map((role) => DropdownMenuItem(value: role, child: Text(role))).toList(),
+            decoration: const InputDecoration(
+              labelText: 'System Role',
+              border: UnderlineInputBorder(),
+            ),
+            items: ['Doctor', 'Nurse', 'Admin'].map((role) {
+              return DropdownMenuItem(value: role, child: Text(role));
+            }).toList(),
             onChanged: (val) => setState(() => _selectedRole = val!),
           ),
           const SizedBox(height: 20),
-          TextField(controller: _idController, decoration: const InputDecoration(labelText: 'Staff ID', prefixIcon: Icon(Icons.badge_outlined, size: 20), border: UnderlineInputBorder())),
+          TextField(
+            controller: _idController,
+            decoration: const InputDecoration(
+              labelText: 'Staff ID',
+              prefixIcon: Icon(Icons.badge_outlined, size: 20),
+              border: UnderlineInputBorder(),
+            ),
+          ),
           const SizedBox(height: 20),
-          TextField(controller: _passwordController, obscureText: true, decoration: const InputDecoration(labelText: 'Password', prefixIcon: Icon(Icons.lock_outline, size: 20), border: UnderlineInputBorder())),
+          TextField(
+            controller: _passwordController,
+            obscureText: true,
+            decoration: const InputDecoration(
+              labelText: 'Password',
+              prefixIcon: Icon(Icons.lock_outline, size: 20),
+              border: UnderlineInputBorder(),
+            ),
+          ),
+          Align(
+            alignment: Alignment.centerRight,
+            child: TextButton(
+              onPressed: () => Navigator.pushNamed(context, '/forgot-password'),
+              child: const Text("Forgot password?"),
+            ),
+          ),
           const SizedBox(height: 30),
           SizedBox(
-            width: double.infinity, height: 55,
+            width: double.infinity,
+            height: 55,
             child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF0D47A1),
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
               onPressed: appState.isLoading ? null : () async {
                 final result = await appState.login(_selectedRole, _idController.text, _passwordController.text);
                 if (mounted) {
                   if (result['success'] == true) {
                     Navigator.pushReplacementNamed(context, '/dashboard');
                   } else {
-                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(result['error'] ?? 'Invalid Credentials'), backgroundColor: Colors.red));
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text(result['error'] ?? 'Invalid credentials'), backgroundColor: Colors.red),
+                    );
                   }
                 }
               },
-              child: appState.isLoading ? const CircularProgressIndicator(color: Colors.white) : const Text("SIGN IN TO SYSTEM", style: TextStyle(fontWeight: FontWeight.bold)),
+              child: appState.isLoading 
+                ? const CircularProgressIndicator(color: Colors.white)
+                : const Text("SIGN IN TO SYSTEM", style: TextStyle(fontWeight: FontWeight.bold)),
             ),
           ),
           const SizedBox(height: 30),
-          Center(child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [const Text("New Staff Member? "), GestureDetector(onTap: () => Navigator.pushNamed(context, '/register'), child: const Text("Register Here", style: TextStyle(color: Color(0xFF0D47A1), fontWeight: FontWeight.bold)))]))
+          // --- REGISTRATION LINK REMOVED FROM HERE AS PER ADMIN-ONLY REQUEST ---
+          Center(
+            child: Text(
+              "Access restricted to authorized personnel only.",
+              style: TextStyle(color: Colors.grey[500], fontSize: 11, fontStyle: FontStyle.italic),
+            ),
+          ),
         ],
       ),
     );

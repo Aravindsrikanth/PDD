@@ -28,6 +28,57 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
     }
   }
 
+  void _showAddStaffDialog() {
+    final idController = TextEditingController();
+    final phoneController = TextEditingController();
+    final passController = TextEditingController();
+    String selectedRole = 'Nurse';
+
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: const Text('Add New Staff Member'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                DropdownButtonFormField<String>(
+                  value: selectedRole,
+                  decoration: const InputDecoration(labelText: 'Role'),
+                  items: ['Doctor', 'Nurse'].map((r) => DropdownMenuItem(value: r, child: Text(r))).toList(),
+                  onChanged: (v) => setDialogState(() => selectedRole = v!),
+                ),
+                TextField(controller: idController, decoration: const InputDecoration(labelText: 'Staff ID')),
+                TextField(controller: phoneController, decoration: const InputDecoration(labelText: 'Phone Number')),
+                TextField(controller: passController, decoration: const InputDecoration(labelText: 'Password'), obscureText: true),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(context), child: const Text('CANCEL')),
+            ElevatedButton(
+              onPressed: () async {
+                final appState = Provider.of<AppState>(context, listen: false);
+                final success = await appState.register(selectedRole, idController.text, "N/A", phoneController.text, passController.text);
+                if (success) {
+                  // Admin created accounts are auto-approved
+                  await appState.approveUser(idController.text);
+                  if (mounted) {
+                    Navigator.pop(context);
+                    _loadStaff();
+                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Staff account created successfully.')));
+                  }
+                }
+              },
+              child: const Text('CREATE ACCOUNT'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final appState = Provider.of<AppState>(context);
@@ -49,8 +100,6 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
               final staffId = user['staffId'] ?? 'N/A';
               final role = user['role'] ?? 'N/A';
               final status = user['status'] ?? 'Pending';
-              
-              // Don't show admin control for the main admin account itself
               bool isMainAdmin = staffId == "admin";
 
               return Card(
@@ -62,6 +111,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                   title: Text('$staffId ($role)'),
                   subtitle: Text('Status: $status'),
                   trailing: isMainAdmin ? const Text('MASTER') : PopupMenuButton<String>(
+                    onPressed: () {},
                     onSelected: (val) async {
                        if (val == 'approve') await appState.approveUser(staffId);
                        if (val == 'block') await appState.blockUser(staffId);
@@ -76,6 +126,12 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
               );
             },
           ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: _showAddStaffDialog,
+        icon: const Icon(Icons.person_add),
+        label: const Text('ADD STAFF'),
+        backgroundColor: const Color(0xFF0D47A1),
+      ),
     );
   }
 
