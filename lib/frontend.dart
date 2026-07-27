@@ -7,122 +7,17 @@ import 'package:icu_app/backend.dart';
 // WIDGETS
 // ==========================================
 
-class CustomCard extends StatelessWidget {
-  final String title, subtitle;
-  final IconData icon;
-  final VoidCallback onTap;
-  final Color? iconColor;
-
-  const CustomCard({super.key, required this.title, required this.subtitle, required this.icon, required this.onTap, this.iconColor});
-
+class StatCard extends StatelessWidget {
+  final String title, value; final IconData icon; final Color color; final VoidCallback? onTap;
+  const StatCard({super.key, required this.title, required this.value, required this.icon, required this.color, this.onTap});
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final primaryColor = iconColor ?? theme.colorScheme.primary;
-    return Card(
-      margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
-        child: Padding(
-          padding: const EdgeInsets.all(20.0),
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(color: primaryColor.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(12)),
-                child: Icon(icon, size: 32, color: primaryColor),
-              ),
-              const SizedBox(width: 20),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(title, style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 4),
-                    Text(subtitle, style: theme.textTheme.bodyMedium?.copyWith(color: Colors.grey[600])),
-                  ],
-                ),
-              ),
-              Icon(Icons.arrow_forward_ios, color: Colors.grey[400], size: 16),
-            ],
-          ),
-        ),
-      ),
-    );
+    return Card(child: InkWell(onTap: onTap, child: Padding(padding: const EdgeInsets.all(12.0), child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [Icon(icon, color: color, size: 28), const SizedBox(height: 8), Text(title, style: const TextStyle(fontSize: 10, color: Colors.grey), textAlign: TextAlign.center), Text(value, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold))]))));
   }
 }
 
 // ==========================================
-// NEW ROLE-SPECIFIC SCREENS
-// ==========================================
-
-class ClinicalProtocolsScreen extends StatelessWidget {
-  const ClinicalProtocolsScreen({super.key});
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Clinical Protocols')),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          _protocolItem('Sepsis Management 2026', 'Updated guidelines for initial fluid resuscitation.'),
-          _protocolItem('Ventilator Weaning', 'Step-by-step criteria for extubation readiness.'),
-          _protocolItem('Advanced Airway Protocol', 'Difficult intubation checklist and drugs.'),
-        ],
-      ),
-    );
-  }
-  Widget _protocolItem(String title, String desc) => Card(child: ListTile(title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold)), subtitle: Text(desc), trailing: const Icon(Icons.picture_as_pdf, color: Colors.red)));
-}
-
-class ShiftHandoverScreen extends StatelessWidget {
-  const ShiftHandoverScreen({super.key});
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Shift Handover')),
-      body: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          children: [
-            const Text('Patient Status Transfer', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 20),
-            Expanded(child: ListView(children: const [
-              ListTile(leading: Icon(Icons.person), title: Text('Patient Aravind'), subtitle: Text('Stable. Off pressors at 08:00.')),
-              ListTile(leading: Icon(Icons.person), title: Text('Patient Ashok'), subtitle: Text('Critical. FI02 increased to 60%.')),
-            ])),
-            ElevatedButton.icon(onPressed: () {}, icon: const Icon(Icons.send), label: const Text('GENERATE HANDOVER REPORT')),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class UserManagementScreen extends StatelessWidget {
-  const UserManagementScreen({super.key});
-  @override
-  Widget build(BuildContext context) {
-    final appState = Provider.of<AppState>(context);
-    return Scaffold(
-      appBar: AppBar(title: const Text('User Management')),
-      body: ListView.builder(
-        itemCount: appState.activeStaff.length,
-        itemBuilder: (context, i) => ListTile(
-          leading: const Icon(Icons.account_circle),
-          title: Text(appState.activeStaff[i]),
-          subtitle: const Text('Status: On Duty'),
-          trailing: const Icon(Icons.edit_note, color: Colors.blue),
-        ),
-      ),
-      floatingActionButton: FloatingActionButton(onPressed: () {}, child: const Icon(Icons.person_add)),
-    );
-  }
-}
-
-// ==========================================
-// EXISTING SCREENS (Restored)
+// SCREENS
 // ==========================================
 
 class MedicalLoginScreen extends StatefulWidget {
@@ -131,116 +26,99 @@ class MedicalLoginScreen extends StatefulWidget {
 }
 
 class _MedicalLoginScreenState extends State<MedicalLoginScreen> {
-  final _idController = TextEditingController();
-  final _passwordController = TextEditingController();
-  String _selectedRole = 'Doctor';
-
+  final _idController = TextEditingController(), _passwordController = TextEditingController(); String _selectedRole = 'Doctor';
   @override
   Widget build(BuildContext context) {
-    final appState = Provider.of<AppState>(context);
-    final size = MediaQuery.of(context).size;
-    final bool isMobile = size.width < 900;
-
+    final appState = Provider.of<AppState>(context); final size = MediaQuery.of(context).size; final bool isMobile = size.width < 900;
     return Scaffold(
       backgroundColor: const Color(0xFFF0F4F8),
-      body: Center(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(vertical: 20),
-          child: Container(
-            width: isMobile ? size.width * 0.95 : 1100,
-            height: isMobile ? null : 700,
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(24),
-              boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.08), blurRadius: 30, offset: const Offset(0, 15))],
-            ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(24),
-              child: isMobile 
-                ? Column(children: [_buildLeftPanel(true), _buildRightPanel(context, appState, true)])
-                : Row(children: [Expanded(child: _buildLeftPanel(false)), Expanded(child: _buildRightPanel(context, appState, false))]),
-            ),
-          ),
-        ),
-      ),
+      body: Center(child: SingleChildScrollView(padding: const EdgeInsets.all(20), child: Container(
+        width: isMobile ? size.width * 0.95 : 1100, decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(24)),
+        child: ClipRRect(borderRadius: BorderRadius.circular(24), child: isMobile ? Column(children: [_buildLeft(true), _buildRight(context, appState, true)]) : Row(children: [Expanded(child: _buildLeft(false)), Expanded(child: _buildRight(context, appState, false))])),
+      ))),
     );
   }
-
-  Widget _buildLeftPanel(bool isMobile) {
-    return Container(
-      width: double.infinity,
-      color: const Color(0xFFB7CBBF),
-      padding: EdgeInsets.symmetric(vertical: isMobile ? 24 : 40, horizontal: 40),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.medical_services_outlined, size: isMobile ? 60 : 100, color: Colors.white),
-          SizedBox(height: isMobile ? 16 : 30),
-          Text("Clinical ICU Suite Pro", style: GoogleFonts.poppins(fontSize: isMobile ? 20 : 24, fontWeight: FontWeight.bold), textAlign: TextAlign.center),
-          const SizedBox(height: 12),
-          const Text("Secure access to real-time critical care data, patient monitoring, and drug dose calculations.", textAlign: TextAlign.center),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildRightPanel(BuildContext context, AppState appState, bool isMobile) {
-    return Container(
-      padding: EdgeInsets.all(isMobile ? 30 : 60),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text("ICU SUITE", style: GoogleFonts.outfit(fontSize: 32, fontWeight: FontWeight.bold, color: const Color(0xFF0D47A1))),
-          const Text("Professional Clinical Gateway"),
-          const SizedBox(height: 40),
-          DropdownButtonFormField<String>(
-            initialValue: _selectedRole,
-            decoration: const InputDecoration(labelText: 'System Role', border: UnderlineInputBorder()),
-            items: ['Doctor', 'Nurse', 'Admin'].map((role) => DropdownMenuItem(value: role, child: Text(role))).toList(),
-            onChanged: (val) => setState(() => _selectedRole = val!),
-          ),
-          const SizedBox(height: 20),
-          TextField(controller: _idController, decoration: const InputDecoration(labelText: 'Staff ID', prefixIcon: Icon(Icons.badge_outlined), border: UnderlineInputBorder())),
-          const SizedBox(height: 20),
-          TextField(controller: _passwordController, obscureText: true, decoration: const InputDecoration(labelText: 'Password', prefixIcon: Icon(Icons.lock_outline), border: UnderlineInputBorder())),
-          const SizedBox(height: 30),
-          SizedBox(
-            width: double.infinity, height: 55,
-            child: ElevatedButton(
-              onPressed: appState.isLoading ? null : () async {
-                final success = await appState.login(_selectedRole, _idController.text, _passwordController.text);
-                if (mounted && success) Navigator.pushReplacementNamed(context, '/dashboard');
-              },
-              child: appState.isLoading ? const CircularProgressIndicator() : const Text("SIGN IN TO SYSTEM"),
-            ),
-          ),
-          TextButton(onPressed: () => Navigator.pushNamed(context, '/register'), child: const Text("Register Account")),
-        ],
-      ),
-    );
-  }
+  Widget _buildLeft(bool isMobile) => Container(width: double.infinity, color: const Color(0xFFB7CBBF), padding: EdgeInsets.all(isMobile ? 24 : 40), child: Column(children: [Icon(Icons.medical_services_outlined, size: isMobile ? 60 : 100, color: Colors.white), const SizedBox(height: 20), Text("Clinical ICU Suite Pro", style: GoogleFonts.poppins(fontSize: isMobile ? 20 : 24, fontWeight: FontWeight.bold)), const Text("Secure clinical gateway.", textAlign: TextAlign.center)]));
+  Widget _buildRight(BuildContext context, AppState appState, bool isMobile) => Padding(padding: EdgeInsets.all(isMobile ? 30 : 60), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+    Text("ICU SUITE", style: GoogleFonts.outfit(fontSize: 32, fontWeight: FontWeight.bold, color: const Color(0xFF0D47A1))),
+    DropdownButtonFormField<String>(initialValue: _selectedRole, decoration: const InputDecoration(labelText: 'System Role'), items: ['Doctor', 'Nurse', 'Admin'].map((r) => DropdownMenuItem(value: r, child: Text(r))).toList(), onChanged: (v) => setState(() => _selectedRole = v!)),
+    TextField(controller: _idController, decoration: const InputDecoration(labelText: 'Staff ID', prefixIcon: Icon(Icons.badge_outlined))),
+    TextField(controller: _passwordController, obscureText: true, decoration: const InputDecoration(labelText: 'Password', prefixIcon: Icon(Icons.lock_outline))),
+    const SizedBox(height: 30),
+    SizedBox(width: double.infinity, height: 55, child: ElevatedButton(onPressed: appState.isLoading ? null : () async {
+      final res = await appState.login(_selectedRole, _idController.text, _passwordController.text);
+      if (mounted && res['success'] == true) Navigator.pushReplacementNamed(context, '/dashboard');
+      else if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(res['error'] ?? 'Login failed')));
+    }, child: appState.isLoading ? const CircularProgressIndicator() : const Text("SIGN IN TO SYSTEM"))),
+  ]));
 }
 
-class RegistrationScreen extends StatefulWidget { const RegistrationScreen({super.key}); @override State<RegistrationScreen> createState() => _RegistrationScreenState(); }
-class _RegistrationScreenState extends State<RegistrationScreen> {
-  String _selectedRole = 'Nurse'; final _idController = TextEditingController(); final _phoneController = TextEditingController(); final _passwordController = TextEditingController();
+class MainShell extends StatefulWidget {
+  const MainShell({super.key});
+  @override State<MainShell> createState() => _MainShellState();
+}
+
+class _MainShellState extends State<MainShell> {
   @override
   Widget build(BuildContext context) {
-    final appState = Provider.of<AppState>(context);
+    final appState = Provider.of<AppState>(context); final role = appState.currentUserRole;
     return Scaffold(
-      appBar: AppBar(title: const Text('Staff Registration')),
-      body: SingleChildScrollView(padding: const EdgeInsets.all(40), child: Column(children: [
-        DropdownButtonFormField<String>(initialValue: _selectedRole, decoration: const InputDecoration(labelText: 'Role', border: OutlineInputBorder()), items: ['Doctor', 'Nurse', 'Admin'].map((r) => DropdownMenuItem(value: r, child: Text(r))).toList(), onChanged: (v) => setState(() => _selectedRole = v!)),
-        const SizedBox(height: 20),
-        TextField(controller: _idController, decoration: const InputDecoration(labelText: 'Staff ID', border: OutlineInputBorder())),
-        const SizedBox(height: 20),
-        TextField(controller: _phoneController, decoration: const InputDecoration(labelText: 'Phone', border: OutlineInputBorder())),
-        const SizedBox(height: 20),
-        TextField(controller: _passwordController, obscureText: true, decoration: const InputDecoration(labelText: 'Password', border: OutlineInputBorder())),
-        const SizedBox(height: 40),
-        ElevatedButton(onPressed: () async { if (await appState.register(_selectedRole, _idController.text, "N/A", _phoneController.text, _passwordController.text)) Navigator.pushReplacementNamed(context, '/dashboard'); }, child: appState.isLoading ? const CircularProgressIndicator() : const Text('REGISTER'))
+      appBar: AppBar(title: Text('ICU Pro - $role'), actions: [IconButton(onPressed: () => appState.toggleTheme(), icon: Icon(appState.isDarkMode ? Icons.light_mode : Icons.dark_mode)), const VerticalDivider(width: 20, indent: 15, endIndent: 15), CircleAvatar(child: Text(role?[0] ?? 'U')), const SizedBox(width: 20)]),
+      drawer: Drawer(child: ListView(padding: EdgeInsets.zero, children: [
+        DrawerHeader(decoration: const BoxDecoration(color: Color(0xFF0D47A1)), child: Column(children: [const Icon(Icons.account_circle, color: Colors.white, size: 50), Text('Access: $role', style: const TextStyle(color: Colors.white))])),
+        ListTile(leading: const Icon(Icons.dashboard), title: const Text('My Dashboard'), onTap: () => Navigator.pop(context)),
+        if (role == 'Doctor') ListTile(leading: const Icon(Icons.assessment), title: const Text('SOFA Scoring'), onTap: () => Navigator.pushNamed(context, '/scoring')),
+        if (role == 'Nurse') ListTile(leading: const Icon(Icons.people), title: const Text('Patients'), onTap: () => Navigator.pushNamed(context, '/patient_management')),
+        if (role == 'Admin') ListTile(leading: const Icon(Icons.manage_accounts), title: const Text('User Management'), onTap: () => Navigator.pushNamed(context, '/user_management')),
+        const Divider(),
+        ListTile(leading: const Icon(Icons.logout), title: const Text('Logout'), onTap: () { appState.logout(); Navigator.pushReplacementNamed(context, '/login'); }),
+      ])),
+      body: SingleChildScrollView(padding: const EdgeInsets.all(24), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Text('Welcome, $role', style: GoogleFonts.outfit(fontSize: 28, fontWeight: FontWeight.bold)),
+        const SizedBox(height: 24),
+        GridView.count(shrinkWrap: true, crossAxisCount: 2, crossAxisSpacing: 12, mainAxisSpacing: 12, children: [
+          StatCard(title: 'Active Patients', value: appState.patients.length.toString(), icon: Icons.people, color: Colors.blue),
+          StatCard(title: 'Beds Available', value: appState.availableBeds.length.toString(), icon: Icons.bed, color: Colors.green),
+        ]),
+        const SizedBox(height: 32),
+        const Text('Ward Overview', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+        ...appState.patients.take(5).map((p) => ListTile(leading: CircleAvatar(child: Text(p.name[0])), title: Text(p.name), subtitle: Text('Bed: ${p.bedNumber} • ${p.status}'))),
       ])),
     );
   }
 }
+
+class UserManagementScreen extends StatefulWidget {
+  const UserManagementScreen({super.key});
+  @override State<UserManagementScreen> createState() => _UserManagementScreenState();
+}
+
+class _UserManagementScreenState extends State<UserManagementScreen> {
+  List<Map<String, dynamic>> _staff = []; bool _loading = true;
+  @override void initState() { super.initState(); _load(); }
+  void _load() async { final s = await Provider.of<AppState>(context, listen: false).fetchStaff(); if (mounted) setState(() { _staff = s; _loading = false; }); }
+  @override
+  Widget build(BuildContext context) {
+    final appState = Provider.of<AppState>(context);
+    return Scaffold(
+      appBar: AppBar(title: const Text('User Management'), actions: [IconButton(onPressed: _load, icon: const Icon(Icons.refresh))]),
+      body: _loading ? const Center(child: CircularProgressIndicator()) : ListView.builder(itemCount: _staff.length, itemBuilder: (c, i) => ListTile(title: Text(_staff[i]['staffId']), subtitle: Text(_staff[i]['role']), trailing: PopupMenuButton<String>(onSelected: (v) async { if (v == 'del') await appState.deleteStaff(_staff[i]['staffId']); _load(); }, itemBuilder: (c) => [const PopupMenuItem(value: 'del', child: Text('Delete'))]))),
+      floatingActionButton: FloatingActionButton(onPressed: () => _showAdd(appState), child: const Icon(Icons.add)),
+    );
+  }
+  void _showAdd(AppState appState) {
+    final id = TextEditingController(), ph = TextEditingController(), pw = TextEditingController(); String role = 'Doctor';
+    showDialog(context: context, builder: (c) => AlertDialog(title: const Text('Add Staff'), content: Column(mainAxisSize: MainAxisSize.min, children: [
+      DropdownButtonFormField<String>(initialValue: role, items: ['Doctor', 'Nurse'].map((r) => DropdownMenuItem(value: r, child: Text(r))).toList(), onChanged: (v) => role = v!),
+      TextField(controller: id, decoration: const InputDecoration(labelText: 'Staff ID')),
+      TextField(controller: ph, decoration: const InputDecoration(labelText: 'Phone')),
+      TextField(controller: pw, decoration: const InputDecoration(labelText: 'Password'), obscureText: true),
+    ]), actions: [TextButton(onPressed: () => Navigator.pop(c), child: const Text('Cancel')), ElevatedButton(onPressed: () async { if (await appState.register(role, id.text, ph.text, pw.text)) { Navigator.pop(c); _load(); } }, child: const Text('Create'))]));
+  }
+}
+
+class PatientManagementScreen extends StatelessWidget { const PatientManagementScreen({super.key}); @override Widget build(BuildContext context) { return Scaffold(appBar: AppBar(title: const Text('Patients'))); } }
+class ScoringScreen extends StatelessWidget { const ScoringScreen({super.key}); @override Widget build(BuildContext context) { return Scaffold(appBar: AppBar(title: const Text('SOFA Scoring'))); } }
+class DoseCalculatorScreen extends StatelessWidget { const DoseCalculatorScreen({super.key}); @override Widget build(BuildContext context) { return Scaffold(appBar: AppBar(title: const Text('Dose Audit'))); } }
+class ForgotPasswordScreen extends StatelessWidget { const ForgotPasswordScreen({super.key}); @override Widget build(BuildContext context) { return Scaffold(appBar: AppBar(title: const Text('Recovery'))); } }
+class DbConfigScreen extends StatelessWidget { const DbConfigScreen({super.key}); @override Widget build(BuildContext context) { return Scaffold(appBar: AppBar(title: const Text('Config'))); } }
