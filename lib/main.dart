@@ -3,8 +3,22 @@ import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 // The two hub files that should be visible in your lib folder:
-import 'package:icu_app/backend.dart';
-import 'package:icu_app/frontend.dart';
+import 'package:icu_app/backend/state/app_state.dart';
+import 'package:icu_app/frontend/screens/login_screen.dart';
+import 'package:icu_app/frontend/screens/registration_screen.dart';
+import 'package:icu_app/frontend/screens/forgot_password_screen.dart';
+import 'package:icu_app/frontend/screens/db_config_screen.dart';
+import 'package:icu_app/frontend/screens/dashboard_screen.dart';
+import 'package:icu_app/frontend/screens/patient_management.dart';
+import 'package:icu_app/frontend/screens/dose_calculator.dart';
+import 'package:icu_app/frontend/screens/interaction_checker.dart';
+import 'package:icu_app/frontend/screens/prescriptions.dart';
+import 'package:icu_app/frontend/screens/audit_logs.dart';
+import 'package:icu_app/frontend/screens/emergency.dart';
+import 'package:icu_app/frontend/screens/analytics.dart';
+import 'package:icu_app/frontend/screens/report_generator.dart';
+import 'package:icu_app/frontend/screens/scoring.dart';
+import 'package:icu_app/frontend/screens/drug_database.dart';
 
 void main() {
   runApp(
