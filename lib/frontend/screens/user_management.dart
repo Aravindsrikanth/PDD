@@ -97,6 +97,13 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                   return;
                 }
 
+                // Check if ID already exists locally first for faster feedback
+                bool existsLocally = _allStaff.any((s) => s['staffId'] == idController.text);
+                if (existsLocally) {
+                  setDialogState(() => errorText = "STAFF ID ${idController.text} ALREADY EXISTS");
+                  return;
+                }
+
                 final appState = Provider.of<AppState>(context, listen: false);
                 final success = await appState.register(selectedRole, idController.text, "N/A", phoneController.text, passController.text);
                 
@@ -110,7 +117,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                     );
                   }
                 } else {
-                  setDialogState(() => errorText = "STAFF ID ALREADY EXISTS");
+                  setDialogState(() => errorText = "STAFF ID ALREADY EXISTS ON SERVER");
                 }
               },
               child: const Text('CREATE ACCOUNT'),
