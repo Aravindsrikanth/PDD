@@ -22,9 +22,7 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
-  AppState() {
-    _init();
-  }
+  AppState() { _init(); }
 
   Future<void> _init() async {
     final prefs = await SharedPreferences.getInstance();
@@ -34,30 +32,9 @@ class AppState extends ChangeNotifier {
     final dbName = prefs.getString('mongodb_db');
     final cluster = prefs.getString('mongodb_cluster');
     
-    final emailUser = prefs.getString('smtp_user');
-    final emailPass = prefs.getString('smtp_pass');
-    final twilioSid = prefs.getString('twilio_sid');
-    final twilioToken = prefs.getString('twilio_token');
-    final twilioNum = prefs.getString('twilio_num');
-    
     if (appId != null && apiKey != null) {
-      _mongoService.updateCredentials(
-        appId, 
-        apiKey, 
-        region: region, 
-        database: dbName, 
-        dataSource: cluster
-      );
+      _mongoService.updateCredentials(appId, apiKey, region: region, dataSource: cluster, database: dbName);
     }
-
-    if (emailUser != null && emailPass != null) {
-      _emailService.updateCredentials(emailUser, emailPass);
-    }
-
-    if (twilioSid != null && twilioToken != null && twilioNum != null) {
-      _smsService.updateCredentials(twilioSid, twilioToken, twilioNum);
-    }
-    
     syncWithServer();
   }
 
@@ -68,25 +45,14 @@ class AppState extends ChangeNotifier {
 
   bool get isCloudSyncActive => _mongoService.isConfigured;
 
-  void updateEmailConfig(String user, String pass) {
-    _emailService.updateCredentials(user, pass);
-  }
-
-  void updateSmsConfig(String sid, String token, String number) {
-    _smsService.updateCredentials(sid, token, number);
-  }
-
   String? _currentUserRole;
   String? get currentUserRole => _currentUserRole;
 
-  final List<String> _activeStaff = ['Dr. Smith', 'Dr. Sarah', 'Nurse John', 'Nurse Emma', 'Dr. Mike', 'Dr. Anna', 'Nurse Chris', 'Nurse Lisa'];
+  final List<String> _activeStaff = ['Dr. Smith', 'Nurse John'];
   List<String> get activeStaff => _activeStaff;
 
   List<Medication> _medications = [
-    Medication(id: 'm1', name: 'Propofol', category: 'Anesthetic', standardDosePerKg: 2.0, minDosePerKg: 1.5, maxDosePerKg: 2.5, unit: 'mg', warning: 'Monitor for Propofol Infusion Syndrome.', interactions: ['m2', 'm3', 'm4']),
-    Medication(id: 'm2', name: 'Midazolam', category: 'Sedative', standardDosePerKg: 0.05, minDosePerKg: 0.02, maxDosePerKg: 0.1, unit: 'mg', warning: 'High risk of respiratory depression.', interactions: ['m1', 'm3']),
-    Medication(id: 'm3', name: 'Fentanyl', category: 'Analgesic', standardDosePerKg: 1.0, minDosePerKg: 0.5, maxDosePerKg: 2.0, unit: 'mcg', warning: 'Monitor respiratory rate closely.', interactions: ['m1', 'm2']),
-    Medication(id: 'm4', name: 'Norepinephrine', category: 'Vasopressor', standardDosePerKg: 0.1, minDosePerKg: 0.01, maxDosePerKg: 0.5, unit: 'mcg/kg/min', warning: 'Monitor MAP and peripheral perfusion.', interactions: ['m1']),
+    Medication(id: 'm1', name: 'Propofol', category: 'Anesthetic', standardDosePerKg: 2.0, minDosePerKg: 1.5, maxDosePerKg: 2.5, unit: 'mg', interactions: ['m2']),
   ];
   List<Medication> get medications => _medications;
 
@@ -110,30 +76,15 @@ class AppState extends ChangeNotifier {
   Future<void> syncWithServer() async {
     _isLoading = true;
     notifyListeners();
-
     try {
       await _mongoService.seedMedications(_medications);
       final remoteMeds = await _mongoService.fetchMedications();
-      if (remoteMeds.isNotEmpty) {
-        _medications = remoteMeds;
-      }
-
-      final remotePatients = await _mongoService.fetchPatients();
-      _patients = remotePatients;
-
-      final remotePrescriptions = await _mongoService.fetchPrescriptions();
-      _prescriptions = remotePrescriptions;
-
-      final remoteLogs = await _mongoService.fetchLogs();
-      _activityLogs = remoteLogs;
-
-      debugPrint('SYNC: MongoDB synchronization complete.');
-    } catch (e) {
-      debugPrint("Sync error: $e");
-    } finally {
-      _isLoading = false;
-      notifyListeners();
-    }
+      if (remoteMeds.isNotEmpty) _medications = remoteMeds;
+      _patients = await _mongoService.fetchPatients();
+      _prescriptions = await _mongoService.fetchPrescriptions();
+      _activityLogs = await _mongoService.fetchLogs();
+    } catch (e) { debugPrint("Sync error: $e"); }
+    finally { _isLoading = false; notifyListeners(); }
   }
 
   List<String> get availableBeds {
@@ -143,36 +94,18 @@ class AppState extends ChangeNotifier {
   }
 
   void addPrescription(Map<String, String> prescription) async {
-    final success = await _mongoService.addPrescription(prescription);
-    if (success) {
+    if (await _mongoService.addPrescription(prescription)) {
       _prescriptions.insert(0, prescription);
-      
-      await _mongoService.addLog({
-        'time': prescription['date']!,
-        'user': _currentUserRole ?? 'System',
-        'action': 'New Prescription: ${prescription['med']} for ${prescription['patient']}',
-      });
-
+      await _mongoService.addLog({'time': prescription['date']!, 'user': _currentUserRole ?? 'System', 'action': 'New Rx: ${prescription['med']}'});
       _activityLogs = await _mongoService.fetchLogs();
-      
-      final pIndex = _patients.indexWhere((p) => p.id == prescription['patientId']);
-      if (pIndex != -1) {
-        _patients[pIndex].history.add('New Prescription: ${prescription['med']} (${prescription['dose']}) at ${prescription['date']}');
-        await _mongoService.savePatient(_patients[pIndex]);
-      }
       notifyListeners();
     }
   }
 
   void addPatient(Patient patient) async {
-    final success = await _mongoService.savePatient(patient);
-    if (success) {
+    if (await _mongoService.savePatient(patient)) {
       _patients.insert(0, patient);
-      await _mongoService.addLog({
-        'time': DateTime.now().toIso8601String(),
-        'user': _currentUserRole ?? 'System',
-        'action': 'Admission: ${patient.name} admitted to ${patient.bedNumber}',
-      });
+      await _mongoService.addLog({'time': DateTime.now().toIso8601String(), 'user': _currentUserRole ?? 'System', 'action': 'Admission: ${patient.name}'});
       _activityLogs = await _mongoService.fetchLogs();
       notifyListeners();
     }
@@ -190,9 +123,6 @@ class AppState extends ChangeNotifier {
       if (gcsVal != null) _patients[index].gcs = gcsVal;
       if (fiO2Val != null) _patients[index].fiO2 = fiO2Val;
       if (paO2Val != null) _patients[index].paO2 = paO2Val;
-      
-      _patients[index].history.add('Clinical data updated at ${DateTime.now().toIso8601String()}');
-      
       await _mongoService.savePatient(_patients[index]);
       notifyListeners();
     }
@@ -208,95 +138,57 @@ class AppState extends ChangeNotifier {
   }
 
   void triggerEmergencyAlert(String alertType) async {
-    await _mongoService.addLog({
-      'user': _currentUserRole ?? 'System',
-      'action': 'CRITICAL ALERT: $alertType triggered',
-      'timestamp': DateTime.now().toIso8601String(),
-    });
+    await _mongoService.addLog({'user': _currentUserRole ?? 'System', 'action': 'ALERT: $alertType'});
     _activityLogs = await _mongoService.fetchLogs();
     notifyListeners();
   }
 
-  Future<bool> login(String role, String staffId, String password) async {
-    _isLoading = true;
-    notifyListeners();
-
+  Future<Map<String, dynamic>> login(String role, String staffId, String password) async {
+    _isLoading = true; notifyListeners();
     final response = await _mongoService.login(role, staffId, password);
-    
-    _isLoading = false;
-    if (response != null) {
-      _currentUserRole = role;
-      notifyListeners();
-      return true;
+    _isLoading = false; notifyListeners();
+    if (response != null && response['success'] == true) {
+      _currentUserRole = role; notifyListeners(); return response;
     }
-    
-    notifyListeners();
-    return false;
+    return response ?? {'success': false, 'error': 'Connection Error'};
   }
 
   Future<bool> register(String role, String staffId, String email, String phone, String password) async {
-    _isLoading = true;
-    notifyListeners();
-
+    _isLoading = true; notifyListeners();
     final success = await _mongoService.register(role, staffId, email, phone, password);
-    
-    if (success) {
-      _currentUserRole = role;
-    }
-    
-    _isLoading = false;
-    notifyListeners();
-    return success;
+    _isLoading = false; notifyListeners(); return success;
+  }
+
+  Future<List<Map<String, dynamic>>> fetchStaff() async { return await _mongoService.fetchAllStaff(); }
+
+  Future<bool> approveUser(String staffId) async {
+    final s = await _mongoService.updateUserStatus(staffId, "Approved");
+    if (s) { await _mongoService.addLog({'user': _currentUserRole ?? 'System', 'action': 'User Approved: $staffId'}); _activityLogs = await _mongoService.fetchLogs(); notifyListeners(); }
+    return s;
+  }
+
+  Future<bool> blockUser(String staffId) async {
+    final s = await _mongoService.updateUserStatus(staffId, "Blocked");
+    if (s) { await _mongoService.addLog({'user': _currentUserRole ?? 'System', 'action': 'User Blocked: $staffId'}); _activityLogs = await _mongoService.fetchLogs(); notifyListeners(); }
+    return s;
   }
 
   Future<bool> resetPasswordWithPhone(String staffId, String phone, String newPassword) async {
-    _isLoading = true;
-    notifyListeners();
-
+    _isLoading = true; notifyListeners();
     final success = await _mongoService.resetPasswordWithPhone(staffId, phone, newPassword);
-    
-    _isLoading = false;
-    notifyListeners();
-    return success;
+    _isLoading = false; notifyListeners(); return success;
   }
 
-  Future<bool> sendOtpSms(String phone, String otp) async {
-    return await _smsService.sendOtpSms(phone, otp);
-  }
-
-  Future<bool> resetPassword(String staffId, String email, String newPassword) async {
-    _isLoading = true;
-    notifyListeners();
-
-    final success = await _mongoService.resetPassword(staffId, email, newPassword);
-    
-    _isLoading = false;
-    notifyListeners();
-    return success;
-  }
-
-  Future<bool> sendOtp(String email, String otp) async {
-    return await _emailService.sendOtpEmail(email, otp);
-  }
-
-  void logout() {
-    _currentUserRole = null;
-    notifyListeners();
-  }
+  void logout() { _currentUserRole = null; notifyListeners(); }
 
   void dischargePatient(String patientId) async {
     final index = _patients.indexWhere((p) => p.id == patientId);
     if (index != -1) {
       final p = _patients[index];
-      final success = await _mongoService.deletePatient(patientId);
-      if (success) {
-        await _mongoService.addLog({
-          'user': _currentUserRole ?? 'System',
-          'action': 'Patient Discharged: ${p.name} from ${p.bedNumber}',
-        });
+      if (await _mongoService.deletePatient(patientId)) {
         _patients.removeAt(index);
-        _activityLogs = await _mongoService.fetchLogs();
-        notifyListeners();
+        await _mongoService.addLog({'user': _currentUserRole ?? 'System', 'action': 'Discharged: ${p.name}'});
+        _activityLogs = await _mongoService.fetchLogs(); notifyListeners();
       }
     }
   }

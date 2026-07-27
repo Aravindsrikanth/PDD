@@ -8,7 +8,7 @@ import '../models/medication.dart';
 class MongoService {
   String _appId = "YOUR_APP_ID"; 
   String _apiKey = "YOUR_API_KEY"; 
-  String _region = "ap-south-1"; // Default region
+  String _region = "ap-south-1"; 
   String _baseUrl = "";
   
   String _dataSource = "Cluster0";
@@ -221,128 +221,98 @@ class MongoService {
     return remoteSuccess || true;
   }
 
+  // --- STAFF / LOGIN METHODS (With Admin Approval Logic) ---
+  
   Future<Map<String, dynamic>?> login(String role, String staffId, String password) async {
     try {
       final result = await _post("findOne", {
         "collection": "staff",
         "filter": {"staffId": staffId, "role": role}
       });
+      
       if (result != null && result['document'] != null) {
         final doc = result['document'];
         if (doc['password'] == password) {
-          return {'success': true, 'role': role, 'staffId': staffId, 'source': 'remote'};
+          // ADMIN BYPASS: The main admin account (staffId: admin) is always active
+          if (staffId == "admin") return {'success': true, 'role': role, 'staffId': staffId};
+
+          // CHECK STATUS: Must be 'Approved'
+          if (doc['status'] == 'Approved') {
+             return {'success': true, 'role': role, 'staffId': staffId};
+          } else if (doc['status'] == 'Blocked') {
+             return {'success': false, 'error': 'Your account has been blocked by the Admin.'};
+          } else {
+             return {'success': false, 'error': 'Account pending Admin approval.'};
+          }
         }
       }
-    } catch (e) {
-      debugPrint('Login Remote Error: $e');
-    }
-    final prefs = await SharedPreferences.getInstance();
-    List<String> localStaff = prefs.getStringList('local_staff') ?? [];
-    for (var s in localStaff) {
-      final user = json.decode(s);
-      if (user['staffId'] == staffId && user['role'] == role && user['password'] == password) {
-        return {'success': true, 'role': role, 'staffId': staffId, 'source': 'local'};
-      }
-    }
-    if (staffId == "admin" && password == "admin123") {
-      return {'success': true, 'role': 'Admin', 'staffId': 'admin', 'source': 'default'};
-    }
+    } catch (e) { debugPrint('Login Remote Error: $e'); }
+
+    // Local Fallback (Default for initial setup)
+    if (staffId == "admin" && password == "admin123") return {'success': true, 'role': 'Admin', 'staffId': 'admin'};
+    
     return null;
   }
 
   Future<bool> register(String role, String staffId, String email, String phone, String password) async {
-    bool remoteSuccess = false;
     try {
-      final existing = await _post("findOne", {
-        "collection": "staff",
-        "filter": {"staffId": staffId}
-      });
-      if (existing != null && existing['document'] != null) {
-        return false; 
-      }
       final result = await _post("insertOne", {
         "collection": "staff",
         "document": {
-          "staffId": staffId, "email": email, "phone": phone, "role": role, "password": password, "createdAt": DateTime.now().toIso8601String()
+          "staffId": staffId,
+          "email": email,
+          "phone": phone,
+          "role": role,
+          "password": password,
+          "status": staffId == "admin" ? "Approved" : "Pending", // Admin is auto-approved
+          "createdAt": DateTime.now().toIso8601String()
         }
       });
-      remoteSuccess = result != null;
+      return result != null;
     } catch (e) {
       debugPrint('Registration Remote Error: $e');
+      return false;
     }
-    final prefs = await SharedPreferences.getInstance();
-    List<String> localStaff = prefs.getStringList('local_staff') ?? [];
-    bool isLocalDuplicate = localStaff.any((s) => json.decode(s)['staffId'] == staffId);
-    if (!isLocalDuplicate) {
-      localStaff.add(json.encode({
-        "staffId": staffId, "email": email, "phone": phone, "role": role, "password": password,
-      }));
-      await prefs.setStringList('local_staff', localStaff);
-    }
-    return remoteSuccess || !isLocalDuplicate;
+  }
+
+  Future<List<Map<String, dynamic>>> fetchAllStaff() async {
+    try {
+      final result = await _post("find", {"collection": "staff"});
+      if (result != null) return List<Map<String, dynamic>>.from(result['documents'] ?? []);
+    } catch (_) {}
+    return [];
+  }
+
+  Future<bool> updateUserStatus(String staffId, String newStatus) async {
+    try {
+      final result = await _post("updateOne", {
+        "collection": "staff",
+        "filter": {"staffId": staffId},
+        "update": {"\$set": {"status": newStatus}}
+      });
+      return result != null;
+    } catch (_) { return false; }
   }
 
   Future<bool> resetPasswordWithPhone(String staffId, String phone, String newPassword) async {
-    bool remoteSuccess = false;
     try {
       final result = await _post("updateOne", {
         "collection": "staff",
         "filter": {"staffId": staffId, "phone": phone},
         "update": {"\$set": {"password": newPassword}}
       });
-      remoteSuccess = result != null && result['matchedCount'] > 0;
-    } catch (e) {
-      debugPrint('Reset Password Phone Remote Error: $e');
-    }
-    final prefs = await SharedPreferences.getInstance();
-    List<String> localStaff = prefs.getStringList('local_staff') ?? [];
-    bool localFound = false;
-    List<String> updatedStaff = localStaff.map((s) {
-      final user = json.decode(s);
-      if (user['staffId'] == staffId && user['phone'] == phone) {
-        user['password'] = newPassword;
-        localFound = true;
-        return json.encode(user);
-      }
-      return s;
-    }).toList();
-    if (localFound) {
-      await prefs.setStringList('local_staff', updatedStaff);
-    }
-    return remoteSuccess || localFound;
+      return result != null && result['matchedCount'] > 0;
+    } catch (_) { return false; }
   }
 
   Future<bool> resetPassword(String staffId, String email, String newPassword) async {
-    bool remoteSuccess = false;
     try {
       final result = await _post("updateOne", {
         "collection": "staff",
         "filter": {"staffId": staffId, "email": email},
         "update": {"\$set": {"password": newPassword}}
       });
-      remoteSuccess = result != null && result['matchedCount'] > 0;
-    } catch (e) {
-      debugPrint('Reset Password Remote Error: $e');
-    }
-
-    final prefs = await SharedPreferences.getInstance();
-    List<String> localStaff = prefs.getStringList('local_staff') ?? [];
-    bool localFound = false;
-    
-    List<String> updatedStaff = localStaff.map((s) {
-      final user = json.decode(s);
-      if (user['staffId'] == staffId && user['email'] == email) {
-        user['password'] = newPassword;
-        localFound = true;
-        return json.encode(user);
-      }
-      return s;
-    }).toList();
-
-    if (localFound) {
-      await prefs.setStringList('local_staff', updatedStaff);
-    }
-
-    return remoteSuccess || localFound;
+      return result != null && result['matchedCount'] > 0;
+    } catch (_) { return false; }
   }
 }
