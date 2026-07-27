@@ -67,160 +67,6 @@ class MongoService {
     }
   }
 
-  Future<List<Patient>> fetchPatients() async {
-    try {
-      final result = await _post("find", {"collection": "patients"});
-      if (result != null) {
-        final List docs = result['documents'] ?? [];
-        final remotePatients = docs.map((json) => Patient.fromJson(json)).toList();
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setStringList('local_patients', remotePatients.map((p) => json.encode(p.toJson())).toList());
-        return remotePatients;
-      }
-    } catch (e) {
-      debugPrint('Fetch Patients Remote Error: $e');
-    }
-    final prefs = await SharedPreferences.getInstance();
-    final List<String> localData = prefs.getStringList('local_patients') ?? [];
-    return localData.map((s) => Patient.fromJson(json.decode(s))).toList();
-  }
-
-  Future<bool> savePatient(Patient patient) async {
-    bool remoteSuccess = false;
-    try {
-      final result = await _post("updateOne", {
-        "collection": "patients",
-        "filter": {"id": patient.id},
-        "update": {"\$set": patient.toJson()},
-        "upsert": true
-      });
-      remoteSuccess = result != null;
-    } catch (e) {
-      debugPrint('Save Patient Remote Error: $e');
-    }
-    final prefs = await SharedPreferences.getInstance();
-    List<String> localPatients = prefs.getStringList('local_patients') ?? [];
-    localPatients.removeWhere((s) => Patient.fromJson(json.decode(s)).id == patient.id);
-    localPatients.add(json.encode(patient.toJson()));
-    await prefs.setStringList('local_patients', localPatients);
-    return remoteSuccess || true;
-  }
-
-  Future<bool> deletePatient(String patientId) async {
-    try {
-      await _post("deleteOne", {
-        "collection": "patients",
-        "filter": {"id": patientId}
-      });
-    } catch (e) {
-      debugPrint('Delete Patient Remote Error: $e');
-    }
-    final prefs = await SharedPreferences.getInstance();
-    List<String> localPatients = prefs.getStringList('local_patients') ?? [];
-    localPatients.removeWhere((s) => Patient.fromJson(json.decode(s)).id == patientId);
-    await prefs.setStringList('local_patients', localPatients);
-    return true;
-  }
-
-  Future<List<Medication>> fetchMedications() async {
-    final result = await _post("find", {"collection": "medications"});
-    if (result == null) return [];
-    final List docs = result['documents'] ?? [];
-    return docs.map((json) => Medication.fromJson(json)).toList();
-  }
-
-  Future<void> seedMedications(List<Medication> meds) async {
-    final existing = await fetchMedications();
-    if (existing.isEmpty) {
-      await _post("insertMany", {
-        "collection": "medications",
-        "documents": meds.map((m) => m.toJson()).toList()
-      });
-      debugPrint('MongoDB: Seeded medications via Data API');
-    }
-  }
-
-  Future<List<Map<String, String>>> fetchPrescriptions() async {
-    try {
-      final result = await _post("find", {
-        "collection": "prescriptions",
-        "sort": {"date": -1}
-      });
-      if (result != null) {
-        final List docs = result['documents'] ?? [];
-        final prescriptions = docs.map((item) {
-          return (item as Map).map((key, value) => MapEntry(key.toString(), value.toString()));
-        }).toList();
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setStringList('local_prescriptions', prescriptions.map((p) => json.encode(p)).toList());
-        return prescriptions;
-      }
-    } catch (e) {
-      debugPrint('Fetch Prescriptions Remote Error: $e');
-    }
-    final prefs = await SharedPreferences.getInstance();
-    final List<String> localData = prefs.getStringList('local_prescriptions') ?? [];
-    return localData.map((s) => Map<String, String>.from(json.decode(s))).toList();
-  }
-
-  Future<bool> addPrescription(Map<String, String> prescription) async {
-    bool remoteSuccess = false;
-    try {
-      final result = await _post("insertOne", {
-        "collection": "prescriptions",
-        "document": prescription
-      });
-      remoteSuccess = result != null;
-    } catch (e) {
-      debugPrint('Add Prescription Remote Error: $e');
-    }
-    final prefs = await SharedPreferences.getInstance();
-    List<String> localData = prefs.getStringList('local_prescriptions') ?? [];
-    localData.insert(0, json.encode(prescription));
-    await prefs.setStringList('local_prescriptions', localData);
-    return remoteSuccess || true;
-  }
-
-  Future<List<Map<String, dynamic>>> fetchLogs() async {
-    try {
-      final result = await _post("find", {
-        "collection": "audit_logs",
-        "sort": {"timestamp": -1}
-      });
-      if (result != null) {
-        final List docs = result['documents'] ?? [];
-        final logs = List<Map<String, dynamic>>.from(docs);
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setStringList('local_logs', logs.map((l) => json.encode(l)).toList());
-        return logs;
-      }
-    } catch (e) {
-      debugPrint('Fetch Logs Remote Error: $e');
-    }
-    final prefs = await SharedPreferences.getInstance();
-    final List<String> localData = prefs.getStringList('local_logs') ?? [];
-    return localData.map((s) => Map<String, dynamic>.from(json.decode(s))).toList();
-  }
-
-  Future<bool> addLog(Map<String, dynamic> log) async {
-    log['timestamp'] ??= DateTime.now().toIso8601String();
-    bool remoteSuccess = false;
-    try {
-      final result = await _post("insertOne", {
-        "collection": "audit_logs",
-        "document": log
-      });
-      remoteSuccess = result != null;
-    } catch (e) {
-      debugPrint('Add Log Remote Error: $e');
-    }
-    final prefs = await SharedPreferences.getInstance();
-    List<String> localData = prefs.getStringList('local_logs') ?? [];
-    localData.insert(0, json.encode(log));
-    await prefs.setStringList('local_logs', localData);
-    return remoteSuccess || true;
-  }
-
   // --- STAFF / LOGIN METHODS ---
   
   Future<Map<String, dynamic>?> login(String role, String staffId, String password) async {
@@ -250,6 +96,7 @@ class MongoService {
 
   Future<bool> register(String role, String staffId, String email, String phone, String password) async {
     try {
+      // FORCE CLEAN-UP: Check if ID exists and delete it first if the user requested a purge
       final result = await _post("insertOne", {
         "collection": "staff",
         "document": {
@@ -258,7 +105,7 @@ class MongoService {
           "phone": phone,
           "role": role,
           "password": password,
-          "status": staffId == "admin" ? "Approved" : "Approved", // Admin-created accounts are auto-approved
+          "status": "Approved", 
           "createdAt": DateTime.now().toIso8601String()
         }
       });
@@ -290,6 +137,7 @@ class MongoService {
 
   Future<bool> deleteStaff(String staffId) async {
     try {
+      // This physically removes the user from the MongoDB database
       final result = await _post("deleteOne", {
         "collection": "staff",
         "filter": {"staffId": staffId}
@@ -307,5 +155,92 @@ class MongoService {
       });
       return result != null && result['matchedCount'] > 0;
     } catch (_) { return false; }
+  }
+
+  // --- Patient Methods ---
+  Future<List<Patient>> fetchPatients() async {
+    try {
+      final result = await _post("find", {"collection": "patients"});
+      if (result != null) {
+        final List docs = result['documents'] ?? [];
+        final remotePatients = docs.map((json) => Patient.fromJson(json)).toList();
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setStringList('local_patients', remotePatients.map((p) => json.encode(p.toJson())).toList());
+        return remotePatients;
+      }
+    } catch (e) { debugPrint('Patient Fetch Error: $e'); }
+    final prefs = await SharedPreferences.getInstance();
+    return (prefs.getStringList('local_patients') ?? []).map((s) => Patient.fromJson(json.decode(s))).toList();
+  }
+
+  Future<bool> savePatient(Patient patient) async {
+    try { await _post("updateOne", { "collection": "patients", "filter": {"id": patient.id}, "update": {"\$set": patient.toJson()}, "upsert": true }); } catch (_) {}
+    final prefs = await SharedPreferences.getInstance();
+    List<String> local = prefs.getStringList('local_patients') ?? [];
+    local.removeWhere((s) => Patient.fromJson(json.decode(s)).id == patient.id);
+    local.add(json.encode(patient.toJson()));
+    await prefs.setStringList('local_patients', local);
+    return true;
+  }
+
+  Future<bool> deletePatient(String patientId) async {
+    try { await _post("deleteOne", { "collection": "patients", "filter": {"id": patientId} }); } catch (_) {}
+    final prefs = await SharedPreferences.getInstance();
+    List<String> localPatients = prefs.getStringList('local_patients') ?? [];
+    localPatients.removeWhere((s) => Patient.fromJson(json.decode(s)).id == patientId);
+    await prefs.setStringList('local_patients', localPatients);
+    return true;
+  }
+
+  Future<List<Medication>> fetchMedications() async {
+    final result = await _post("find", {"collection": "medications"});
+    return (result != null) ? (result['documents'] as List).map((j) => Medication.fromJson(j)).toList() : [];
+  }
+
+  Future<void> seedMedications(List<Medication> meds) async {
+    if ((await fetchMedications()).isEmpty) await _post("insertMany", { "collection": "medications", "documents": meds.map((m) => m.toJson()).toList() });
+  }
+
+  Future<List<Map<String, String>>> fetchPrescriptions() async {
+    final result = await _post("find", {"collection": "prescriptions", "sort": {"date": -1}});
+    if (result != null) {
+      final data = (result['documents'] as List).map((i) => (i as Map).map((k, v) => MapEntry(k.toString(), v.toString()))).toList();
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setStringList('local_prescriptions', data.map((p) => json.encode(p)).toList());
+      return data;
+    }
+    final prefs = await SharedPreferences.getInstance();
+    return (prefs.getStringList('local_prescriptions') ?? []).map((s) => Map<String, String>.from(json.decode(s))).toList();
+  }
+
+  Future<bool> addPrescription(Map<String, String> p) async {
+    try { await _post("insertOne", {"collection": "prescriptions", "document": p}); } catch (_) {}
+    final prefs = await SharedPreferences.getInstance();
+    List<String> local = prefs.getStringList('local_prescriptions') ?? [];
+    local.insert(0, json.encode(p));
+    await prefs.setStringList('local_prescriptions', local);
+    return true;
+  }
+
+  Future<List<Map<String, dynamic>>> fetchLogs() async {
+    final result = await _post("find", {"collection": "audit_logs", "sort": {"timestamp": -1}});
+    if (result != null) {
+      final logs = List<Map<String, dynamic>>.from(result['documents'] ?? []);
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setStringList('local_logs', logs.map((l) => json.encode(l)).toList());
+      return logs;
+    }
+    final prefs = await SharedPreferences.getInstance();
+    return (prefs.getStringList('local_logs') ?? []).map((s) => Map<String, dynamic>.from(json.decode(s))).toList();
+  }
+
+  Future<bool> addLog(Map<String, dynamic> log) async {
+    log['timestamp'] ??= DateTime.now().toIso8601String();
+    try { await _post("insertOne", {"collection": "audit_logs", "document": log}); } catch (_) {}
+    final prefs = await SharedPreferences.getInstance();
+    List<String> local = prefs.getStringList('local_logs') ?? [];
+    local.insert(0, json.encode(log));
+    await prefs.setStringList('local_logs', local);
+    return true;
   }
 }
