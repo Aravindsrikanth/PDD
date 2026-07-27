@@ -33,6 +33,11 @@ class MongoService {
 
   bool get isConfigured => _appId != "YOUR_APP_ID" && _apiKey != "YOUR_API_KEY" && _appId.isNotEmpty && _apiKey.isNotEmpty;
 
+  Map<String, String> get _headers => {
+    'Content-Type': 'application/json',
+    'api-key': _apiKey,
+  };
+
   Future<Map<String, dynamic>?> _post(String action, Map<String, dynamic> body) async {
     if (_appId == "YOUR_APP_ID" || _apiKey == "YOUR_API_KEY" || _baseUrl.isEmpty) {
       debugPrint('MongoDB Data API: No credentials configured. skipping remote call.');
