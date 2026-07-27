@@ -48,7 +48,21 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                 if (errorText != null)
                   Padding(
                     padding: const EdgeInsets.only(bottom: 12.0),
-                    child: Text(errorText!, style: const TextStyle(color: Colors.red, fontSize: 12, fontWeight: FontWeight.bold)),
+                    child: Column(
+                      children: [
+                        Text(errorText!, style: const TextStyle(color: Colors.red, fontSize: 12, fontWeight: FontWeight.bold), textAlign: TextAlign.center),
+                        if (errorText!.contains("EXISTS"))
+                          TextButton(
+                            onPressed: () async {
+                              final appState = Provider.of<AppState>(context, listen: false);
+                              await appState.deleteStaff(idController.text);
+                              setDialogState(() => errorText = "ID ${idController.text} DELETED. YOU CAN NOW CREATE IT.");
+                              _loadStaff();
+                            },
+                            child: const Text('DELETE EXISTING ID NOW', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+                          ),
+                      ],
+                    ),
                   ),
                 DropdownButtonFormField<String>(
                   value: selectedRole,
@@ -66,12 +80,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                   controller: phoneController,
                   keyboardType: TextInputType.phone,
                   maxLength: 10,
-                  decoration: const InputDecoration(
-                    labelText: 'Phone Number (10 Digits)', 
-                    prefixIcon: Icon(Icons.phone_android), 
-                    border: OutlineInputBorder(),
-                    counterText: "",
-                  ),
+                  decoration: const InputDecoration(labelText: 'Phone Number (10 Digits)', prefixIcon: Icon(Icons.phone_android), border: OutlineInputBorder(), counterText: ""),
                 ),
                 const SizedBox(height: 12),
                 TextField(
@@ -87,7 +96,6 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
             ElevatedButton(
               style: ElevatedButton.styleFrom(shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))),
               onPressed: () async {
-                // Validation Logic
                 if (idController.text.isEmpty || phoneController.text.isEmpty || passController.text.isEmpty) {
                   setDialogState(() => errorText = "ALL FIELDS ARE REQUIRED");
                   return;
@@ -97,27 +105,17 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                   return;
                 }
 
-                // Check if ID already exists locally first for faster feedback
-                bool existsLocally = _allStaff.any((s) => s['staffId'] == idController.text);
-                if (existsLocally) {
-                  setDialogState(() => errorText = "STAFF ID ${idController.text} ALREADY EXISTS");
-                  return;
-                }
-
                 final appState = Provider.of<AppState>(context, listen: false);
                 final success = await appState.register(selectedRole, idController.text, "N/A", phoneController.text, passController.text);
                 
                 if (success) {
-                  await appState.approveUser(idController.text);
                   if (mounted) {
                     Navigator.pop(context);
                     _loadStaff();
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Staff account created and approved!'), backgroundColor: Colors.green)
-                    );
+                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Staff account added successfully!'), backgroundColor: Colors.green));
                   }
                 } else {
-                  setDialogState(() => errorText = "STAFF ID ALREADY EXISTS ON SERVER");
+                  setDialogState(() => errorText = "STAFF ID ${idController.text} ALREADY EXISTS");
                 }
               },
               child: const Text('CREATE ACCOUNT'),
@@ -131,13 +129,10 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
   @override
   Widget build(BuildContext context) {
     final appState = Provider.of<AppState>(context);
-    
     return Scaffold(
       appBar: AppBar(
         title: const Text('Staff & Access Control'),
-        actions: [
-          IconButton(onPressed: _loadStaff, icon: const Icon(Icons.refresh)),
-        ],
+        actions: [IconButton(onPressed: _loadStaff, icon: const Icon(Icons.refresh))],
       ),
       body: _isLoading 
         ? const Center(child: CircularProgressIndicator())
@@ -148,7 +143,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
               final user = _allStaff[i];
               final staffId = user['staffId'] ?? 'N/A';
               final role = user['role'] ?? 'N/A';
-              final status = user['status'] ?? 'Pending';
+              final status = user['status'] ?? 'Approved';
               bool isMainAdmin = staffId == "admin";
 
               return Card(
@@ -156,21 +151,28 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
                 child: ListTile(
                   contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                  leading: CircleAvatar(
-                    backgroundColor: _getStatusColor(status).withOpacity(0.1),
-                    child: Icon(Icons.person_outline, color: _getStatusColor(status)),
-                  ),
+                  leading: CircleAvatar(backgroundColor: Colors.blue[50], child: Icon(Icons.person, color: Colors.blue[900])),
                   title: Text('$staffId', style: const TextStyle(fontWeight: FontWeight.bold)),
-                  subtitle: Text('$role • Status: $status', style: TextStyle(color: Colors.grey[600], fontSize: 12)),
-                  trailing: isMainAdmin ? const Text('MASTER', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.blue)) : PopupMenuButton<String>(
+                  subtitle: Text('$role • Status: $status', style: const TextStyle(fontSize: 12)),
+                  trailing: isMainAdmin ? const Text('MASTER') : PopupMenuButton<String>(
                     onSelected: (val) async {
-                       if (val == 'approve') await appState.approveUser(staffId);
-                       if (val == 'block') await appState.blockUser(staffId);
-                       _loadStaff();
+                       if (val == 'delete') {
+                         await appState.deleteStaff(staffId);
+                         _loadStaff();
+                       }
+                       if (val == 'block') {
+                         await appState.blockUser(staffId);
+                         _loadStaff();
+                       }
+                       if (val == 'approve') {
+                         await appState.approveUser(staffId);
+                         _loadStaff();
+                       }
                     },
                     itemBuilder: (context) => [
-                      const PopupMenuItem(value: 'approve', child: Text('Approve Account')),
-                      const PopupMenuItem(value: 'block', child: Text('Block Account')),
+                      const PopupMenuItem(value: 'approve', child: Text('Approve')),
+                      const PopupMenuItem(value: 'block', child: Text('Block')),
+                      const PopupMenuItem(value: 'delete', child: Text('Delete Account', style: TextStyle(color: Colors.red))),
                     ],
                   ),
                 ),
@@ -184,11 +186,5 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
         backgroundColor: const Color(0xFF0D47A1),
       ),
     );
-  }
-
-  Color _getStatusColor(String status) {
-    if (status == 'Approved') return Colors.green;
-    if (status == 'Blocked') return Colors.red;
-    return Colors.orange;
   }
 }

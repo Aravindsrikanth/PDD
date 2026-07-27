@@ -177,6 +177,12 @@ class AppState extends ChangeNotifier {
     return s;
   }
 
+  Future<bool> deleteStaff(String staffId) async {
+    final s = await _mongoService.deleteStaff(staffId);
+    if (s) { await _mongoService.addLog({'user': _currentUserRole ?? 'System', 'action': 'Staff Account Deleted: $staffId'}); _activityLogs = await _mongoService.fetchLogs(); notifyListeners(); }
+    return s;
+  }
+
   Future<bool> resetPasswordWithPhone(String staffId, String phone, String newPassword) async {
     _isLoading = true; notifyListeners();
     final success = await _mongoService.resetPasswordWithPhone(staffId, phone, newPassword);

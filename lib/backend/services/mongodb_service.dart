@@ -221,7 +221,7 @@ class MongoService {
     return remoteSuccess || true;
   }
 
-  // --- STAFF / LOGIN METHODS (With Admin Approval Logic) ---
+  // --- STAFF / LOGIN METHODS ---
   
   Future<Map<String, dynamic>?> login(String role, String staffId, String password) async {
     try {
@@ -233,24 +233,18 @@ class MongoService {
       if (result != null && result['document'] != null) {
         final doc = result['document'];
         if (doc['password'] == password) {
-          // ADMIN BYPASS: The main admin account (staffId: admin) is always active
           if (staffId == "admin") return {'success': true, 'role': role, 'staffId': staffId};
-
-          // CHECK STATUS: Must be 'Approved'
           if (doc['status'] == 'Approved') {
              return {'success': true, 'role': role, 'staffId': staffId};
           } else if (doc['status'] == 'Blocked') {
-             return {'success': false, 'error': 'Your account has been blocked by the Admin.'};
+             return {'success': false, 'error': 'Account blocked by Admin.'};
           } else {
-             return {'success': false, 'error': 'Account pending Admin approval.'};
+             return {'success': false, 'error': 'Account pending approval.'};
           }
         }
       }
-    } catch (e) { debugPrint('Login Remote Error: $e'); }
-
-    // Local Fallback (Default for initial setup)
+    } catch (e) { debugPrint('Login Error: $e'); }
     if (staffId == "admin" && password == "admin123") return {'success': true, 'role': 'Admin', 'staffId': 'admin'};
-    
     return null;
   }
 
@@ -264,13 +258,13 @@ class MongoService {
           "phone": phone,
           "role": role,
           "password": password,
-          "status": staffId == "admin" ? "Approved" : "Pending", // Admin is auto-approved
+          "status": staffId == "admin" ? "Approved" : "Approved", // Admin-created accounts are auto-approved
           "createdAt": DateTime.now().toIso8601String()
         }
       });
       return result != null;
     } catch (e) {
-      debugPrint('Registration Remote Error: $e');
+      debugPrint('Registration Error: $e');
       return false;
     }
   }
@@ -294,22 +288,21 @@ class MongoService {
     } catch (_) { return false; }
   }
 
+  Future<bool> deleteStaff(String staffId) async {
+    try {
+      final result = await _post("deleteOne", {
+        "collection": "staff",
+        "filter": {"staffId": staffId}
+      });
+      return result != null;
+    } catch (_) { return false; }
+  }
+
   Future<bool> resetPasswordWithPhone(String staffId, String phone, String newPassword) async {
     try {
       final result = await _post("updateOne", {
         "collection": "staff",
         "filter": {"staffId": staffId, "phone": phone},
-        "update": {"\$set": {"password": newPassword}}
-      });
-      return result != null && result['matchedCount'] > 0;
-    } catch (_) { return false; }
-  }
-
-  Future<bool> resetPassword(String staffId, String email, String newPassword) async {
-    try {
-      final result = await _post("updateOne", {
-        "collection": "staff",
-        "filter": {"staffId": staffId, "email": email},
         "update": {"\$set": {"password": newPassword}}
       });
       return result != null && result['matchedCount'] > 0;
