@@ -104,6 +104,9 @@ class ICUSuitePro extends StatelessWidget {
         '/reports': (context) => const ReportGeneratorScreen(),
         '/scoring': (context) => const ScoringScreen(),
         '/drug_database': (context) => const DrugDatabaseScreen(),
+        '/protocols': (context) => const ClinicalProtocolsScreen(),
+        '/handover': (context) => const ShiftHandoverScreen(),
+        '/user_management': (context) => const UserManagementScreen(),
       },
     );
   }

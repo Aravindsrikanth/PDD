@@ -48,32 +48,36 @@ class _MainShellState extends State<MainShell> {
               ),
             ),
             
-            // --- UNIVERSAL ITEMS ---
             _drawerItem(context, Icons.dashboard, 'My Dashboard', '/dashboard'),
             
-            // --- DOCTOR & ADMIN ONLY ---
-            if (role == 'Doctor' || role == 'Admin') ...[
+            // --- DOCTOR ONLY ---
+            if (role == 'Doctor') ...[
+              _drawerItem(context, Icons.menu_book_outlined, 'Clinical Protocols', '/protocols'),
               _drawerItem(context, Icons.assessment_outlined, 'Clinical Scoring (SOFA)', '/scoring'),
               _drawerItem(context, Icons.calculate, 'Advanced Dose Audit', '/dose_calculator'),
             ],
 
-            // --- NURSE & DOCTOR & ADMIN ---
-            _drawerItem(context, Icons.people, 'Patient Management', '/patient_management'),
-            _drawerItem(context, Icons.menu_book, 'Drug Reference', '/drug_database'),
-
-            const Divider(),
+            // --- NURSE ONLY ---
+            if (role == 'Nurse') ...[
+              _drawerItem(context, Icons.assignment_turned_in, 'Shift Handover', '/handover'),
+              _drawerItem(context, Icons.people, 'Patient Management', '/patient_management'),
+              _drawerItem(context, Icons.menu_book, 'Drug Reference', '/drug_database'),
+            ],
 
             // --- ADMIN ONLY SECTION ---
             if (role == 'Admin') ...[
+              const Divider(),
               const Padding(
                 padding: EdgeInsets.only(left: 16, top: 10, bottom: 5),
                 child: Text('SYSTEM ADMINISTRATION', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.grey)),
               ),
+              _drawerItem(context, Icons.manage_accounts, 'User Management', '/user_management'),
               _drawerItem(context, Icons.bar_chart, 'Medication Analytics', '/analytics'),
               _drawerItem(context, Icons.history, 'System Audit Logs', '/audit_logs'),
               _drawerItem(context, Icons.settings_applications, 'Backend Configuration', '/config'),
             ],
 
+            const Divider(),
             _drawerItem(context, Icons.logout, 'Log Out', '/login', isLogout: true),
           ],
         ),
@@ -137,7 +141,7 @@ class RoleBasedDashboard extends StatelessWidget {
     );
   }
 
-  // --- ADMIN DASHBOARD: Analytics & Management ---
+  // --- ADMIN DASHBOARD ---
   Widget _buildAdminDashboard(AppState appState, bool isMobile) {
     return GridView.count(
       shrinkWrap: true, physics: const NeverScrollableScrollPhysics(),
@@ -151,7 +155,7 @@ class RoleBasedDashboard extends StatelessWidget {
     );
   }
 
-  // --- DOCTOR DASHBOARD: Clinical Oversight ---
+  // --- DOCTOR DASHBOARD ---
   Widget _buildDoctorDashboard(AppState appState, bool isMobile) {
     final critical = appState.patients.where((p) => p.status == 'Critical').length;
     return GridView.count(
@@ -160,20 +164,20 @@ class RoleBasedDashboard extends StatelessWidget {
       children: [
         StatCard(title: 'Critical Alerts', value: critical.toString(), icon: Icons.warning_amber, color: Colors.red),
         StatCard(title: 'Active Rounds', value: appState.patients.length.toString(), icon: Icons.assignment_ind, color: Colors.blue),
-        StatCard(title: 'Bed Capacity', value: '∞', icon: Icons.bed, color: Colors.green),
+        StatCard(title: 'Clinical Guides', value: '12 New', icon: Icons.menu_book, color: Colors.teal),
       ],
     );
   }
 
-  // --- NURSE DASHBOARD: Bedside Monitoring ---
+  // --- NURSE DASHBOARD ---
   Widget _buildNurseDashboard(AppState appState, bool isMobile) {
     return GridView.count(
       shrinkWrap: true, physics: const NeverScrollableScrollPhysics(),
       crossAxisCount: isMobile ? 2 : 3, crossAxisSpacing: 12, mainAxisSpacing: 12,
       children: [
         StatCard(title: 'My Beds', value: appState.patients.length.toString(), icon: Icons.monitor_heart, color: Colors.teal),
+        StatCard(title: 'Shift Notes', value: 'Active', icon: Icons.assignment, color: Colors.blue),
         StatCard(title: 'Available Beds', value: appState.availableBeds.length.toString(), icon: Icons.bed, color: Colors.green),
-        StatCard(title: 'Recent Logs', value: '5 New', icon: Icons.notifications, color: Colors.blue),
       ],
     );
   }
@@ -183,12 +187,26 @@ class RoleBasedDashboard extends StatelessWidget {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Recent System Activity', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          const Text('System Health & Security', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
           const SizedBox(height: 16),
           ...appState.activityLogs.take(5).map((log) => ListTile(
-            leading: const Icon(Icons.security, color: Colors.grey),
+            leading: const Icon(Icons.security, color: Colors.blue),
             title: Text(log['action'] ?? ''),
             subtitle: Text(log['timestamp'] ?? ''),
+          )),
+        ],
+      );
+    } else if (role == 'Doctor') {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('Priority Patient Status', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 16),
+          ...appState.patients.take(5).map((p) => ListTile(
+            leading: CircleAvatar(backgroundColor: p.status == 'Critical' ? Colors.red[100] : Colors.blue[100], child: Text(p.name[0])),
+            title: Text(p.name),
+            subtitle: Text('Bed: ${p.bedNumber} • ${p.status}'),
+            trailing: const Icon(Icons.assessment, color: Colors.blue),
           )),
         ],
       );
@@ -196,13 +214,17 @@ class RoleBasedDashboard extends StatelessWidget {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Ward Patient Overview', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          const Text('Current Bedside Monitoring', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
           const SizedBox(height: 16),
           ...appState.patients.take(5).map((p) => ListTile(
-            leading: CircleAvatar(child: Text(p.name[0])),
+            leading: const Icon(Icons.bed, color: Colors.teal),
             title: Text(p.name),
-            subtitle: Text('Bed: ${p.bedNumber} • ${p.status}'),
-            trailing: role == 'Doctor' ? const Icon(Icons.assessment, color: Colors.blue) : null,
+            subtitle: Text('Vitals check due: Now'),
+            trailing: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+              decoration: BoxDecoration(color: Colors.teal[50], borderRadius: BorderRadius.circular(4)),
+              child: const Text('MONITOR', style: TextStyle(color: Colors.teal, fontSize: 10, fontWeight: FontWeight.bold)),
+            ),
           )),
         ],
       );
