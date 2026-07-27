@@ -36,7 +36,7 @@ class _MedicalLoginScreenState extends State<MedicalLoginScreen> {
   final _idController = TextEditingController(), _passwordController = TextEditingController(); String _selectedRole = 'Doctor';
   @override
   Widget build(BuildContext context) {
-    final appState = Provider.of<AppState>(context); final isMobile = MediaQuery.of(context).size.width < 900;
+    final appState = Provider.of<AppState>(context); final size = MediaQuery.of(context).size; final bool isMobile = size.width < 900;
     return Scaffold(
       backgroundColor: const Color(0xFFF0F4F8),
       body: Center(child: SingleChildScrollView(padding: const EdgeInsets.all(20), child: Container(
@@ -188,7 +188,7 @@ class _DoseCalculatorScreenState extends State<DoseCalculatorScreen> {
   Widget build(BuildContext context) {
     final appState = Provider.of<AppState>(context);
     return Scaffold(
-      app_bar: AppBar(title: const Text('Dose Calculator')),
+      appBar: AppBar(title: const Text('Dose Calculator')),
       body: Padding(padding: const EdgeInsets.all(24), child: Column(children: [
         DropdownButtonFormField<Medication>(value: _selectedMed, decoration: const InputDecoration(labelText: 'Medication'), items: appState.medications.map((m) => DropdownMenuItem(value: m, child: Text(m.name))).toList(), onChanged: (v) => setState(() => _selectedMed = v)),
         TextField(controller: _weightController, decoration: const InputDecoration(labelText: 'Weight (kg)'), keyboardType: TextInputType.number),
@@ -214,8 +214,20 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
     return Scaffold(
       appBar: AppBar(title: const Text('User Management'), actions: [IconButton(onPressed: _load, icon: const Icon(Icons.refresh))]),
       body: _loading ? const Center(child: CircularProgressIndicator()) : ListView.builder(itemCount: _staff.length, itemBuilder: (c, i) => ListTile(title: Text(_staff[i]['staffId']), subtitle: Text(_staff[i]['role']), trailing: PopupMenuButton<String>(onSelected: (v) async { if (v == 'del') await appState.deleteStaff(_staff[i]['staffId']); _load(); }, itemBuilder: (c) => [const PopupMenuItem(value: 'del', child: Text('Delete Account'))]))),
-      floatingActionButton: FloatingActionButton.extended(onPressed: () {}, icon: const Icon(Icons.add), label: const Text('ADD STAFF')),
+      floatingActionButton: FloatingActionButton.extended(onPressed: () => _showAdd(appState), icon: const Icon(Icons.add), label: const Text('ADD STAFF')),
     );
+  }
+  void _showAdd(AppState appState) {
+    final id = TextEditingController(), ph = TextEditingController(), pw = TextEditingController(); String role = 'Doctor'; bool dLoad = false;
+    showDialog(context: context, builder: (c) => StatefulBuilder(builder: (context, setD) => AlertDialog(title: const Text('Add New Staff'), content: Column(mainAxisSize: MainAxisSize.min, children: [
+      DropdownButtonFormField<String>(value: role, items: ['Doctor', 'Nurse'].map((r) => DropdownMenuItem(value: r, child: Text(r))).toList(), onChanged: (v) => setD(() => role = v!)),
+      TextField(controller: id, decoration: const InputDecoration(labelText: 'Staff ID')),
+      TextField(controller: ph, decoration: const InputDecoration(labelText: 'Phone')),
+      TextField(controller: pw, decoration: const InputDecoration(labelText: 'Password'), obscureText: true),
+    ]), actions: [TextButton(onPressed: () => Navigator.pop(c), child: const Text('Cancel')), ElevatedButton(onPressed: dLoad ? null : () async {
+      setD(() => dLoad = true); final s = await appState.register(role, id.text, ph.text, pw.text);
+      if (mounted) { if (s) { Navigator.pop(c); _load(); } else { setD(() => dLoad = false); ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Registration error.'))); } }
+    }, child: dLoad ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)) : const Text('Create'))])));
   }
 }
 

@@ -3,9 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import 'package:mailer/mailer.dart';
-import 'package:mailer/smtp_server.dart';
-import 'package:twilio_flutter/twilio_flutter.dart';
 
 // ==========================================
 // MODELS
@@ -29,7 +26,7 @@ class Patient {
     systolicBP: double.tryParse(json['systolicBP']?.toString() ?? ''), diastolicBP: double.tryParse(json['diastolicBP']?.toString() ?? ''),
     heartRate: int.tryParse(json['heartRate']?.toString() ?? ''), bilirubin: double.tryParse(json['bilirubin']?.toString() ?? ''),
     platelets: double.tryParse(json['platelets']?.toString() ?? ''), creatinine: double.tryParse(json['creatinine']?.toString() ?? ''),
-    gcs: double.tryParse(json['gcs']?.toString() ?? '15') ?? 15.0, fiO2: double.tryParse(json['fiO2']?.toString() ?? '0.21') ?? 0.21, paO2: double.tryParse(json['paO2']?.toString() ?? ''),
+    gcs: double.tryParse(json['gcs']?.toString() ?? '15') ?? 15, fiO2: double.tryParse(json['fiO2']?.toString() ?? '0.21') ?? 0.21, paO2: double.tryParse(json['paO2']?.toString() ?? ''),
     history: List<String>.from(json['history'] ?? []),
   );
 
@@ -119,10 +116,10 @@ class MongoService {
     await _post("deleteOne", { "collection": "staff", "filter": {"staffId": id} });
     return await _post("insertOne", { "collection": "staff", "document": { "staffId": id, "phone": ph, "role": r, "password": pass, "status": "Approved", "createdAt": DateTime.now().toIso8601String() } }) != null;
   }
-
+  
   Future<List<Medication>> fetchMedications() async {
-    final result = await _post("find", {"collection": "medications"});
-    return (result != null) ? (result['documents'] as List).map((j) => Medication.fromJson(j)).toList() : [];
+    final res = await _post("find", {"collection": "medications"});
+    return (res != null) ? (res['documents'] as List).map((j) => Medication.fromJson(j)).toList() : [];
   }
 
   Future<void> seedMedications(List<Medication> meds) async {
@@ -132,35 +129,23 @@ class MongoService {
   Future<List<Map<String, String>>> fetchPrescriptions() async {
     final res = await _post("find", {"collection": "prescriptions", "sort": {"date": -1}});
     if (res != null) {
-      return (res['documents'] as List).map((i) => (i as Map).map((k, v) => MapEntry(k.toString(), v.toString()))).toList();
+      final data = (res['documents'] as List).map((i) => (i as Map).map((k, v) => MapEntry(k.toString(), v.toString()))).toList();
+      return data;
     }
     return [];
   }
 
   Future<bool> addPrescription(Map<String, String> p) async => await _post("insertOne", {"collection": "prescriptions", "document": p}) != null;
-
+  
   Future<List<Map<String, dynamic>>> fetchLogs() async {
-    final result = await _post("find", {"collection": "audit_logs", "sort": {"timestamp": -1}});
-    return result != null ? List<Map<String, dynamic>>.from(result['documents'] ?? []) : [];
+    final res = await _post("find", {"collection": "audit_logs", "sort": {"timestamp": -1}});
+    return res != null ? List<Map<String, dynamic>>.from(res['documents'] ?? []) : [];
   }
 
   Future<bool> addLog(Map<String, dynamic> log) async {
     log['timestamp'] ??= DateTime.now().toIso8601String();
     return await _post("insertOne", {"collection": "audit_logs", "document": log}) != null;
   }
-
-  Future<bool> resetPassword(String id, String e, String pass) async {
-    return await _post("updateOne", { "collection": "staff", "filter": {"staffId": id, "email": e}, "update": {"\$set": {"password": pass}} }) != null;
-  }
-}
-
-class EmailService {
-  Future<bool> sendOtpEmail(String e, String o) async => true;
-}
-
-class SmsService {
-  void updateCredentials(String s, String t, String n) {}
-  Future<bool> sendOtpSms(String p, String o) async => true;
 }
 
 // ==========================================
@@ -169,8 +154,6 @@ class SmsService {
 
 class AppState extends ChangeNotifier {
   final MongoService _mongoService = MongoService();
-  final EmailService _emailService = EmailService();
-  final SmsService _smsService = SmsService();
   
   bool _isLoading = false, _isDarkMode = false;
   bool get isLoading => _isLoading; bool get isDarkMode => _isDarkMode;
@@ -184,13 +167,14 @@ class AppState extends ChangeNotifier {
     syncWithServer();
   }
 
-  void updateMongoConfig(String id, String k, {String? r, String? ds, String? db}) { _mongoService.updateCredentials(id, k, r: r, ds: ds, db: db); syncWithServer(); }
-  void updateSmsConfig(String s, String t, String n) { _smsService.updateCredentials(s, t, n); }
+  void updateMongoConfig(String id, String k, {String? r, String? ds, String? db}) { 
+    _mongoService.updateCredentials(id, k, r: r, ds: ds, db: db); 
+    syncWithServer(); 
+  }
   bool get isCloudSyncActive => _mongoService.isConfigured;
 
   String? _currentUserRole; String? get currentUserRole => _currentUserRole;
-  final List<String> _activeStaff = ['Dr. Smith', 'Dr. Sarah', 'Nurse John', 'Nurse Emma', 'Dr. Mike', 'Dr. Anna', 'Nurse Chris', 'Nurse Lisa'];
-  List<String> get activeStaff => _activeStaff;
+  final List<String> _activeStaff = ['Dr. Smith', 'Dr. Sarah', 'Nurse John', 'Nurse Emma', 'Dr. Mike', 'Dr. Anna', 'Nurse Chris', 'Nurse Lisa']; List<String> get activeStaff => _activeStaff;
   
   List<Patient> _patients = []; List<Patient> get patients => _patients;
   List<Map<String, dynamic>> _activityLogs = []; List<Map<String, dynamic>> get activityLogs => _activityLogs;
@@ -199,20 +183,12 @@ class AppState extends ChangeNotifier {
   String _shiftHandover = "Current ward status: Stable. All ventilator checks complete."; String get shiftHandover => _shiftHandover;
   void updateHandover(String text) { _shiftHandover = text; notifyListeners(); }
 
-  List<Medication> _medications = [
-    Medication(id: 'm1', name: 'Propofol', category: 'Anesthetic', standardDosePerKg: 2.0, minDosePerKg: 1.5, maxDosePerKg: 2.5, unit: 'mg', warning: 'Monitor for PIS.', interactions: ['m2', 'm3']),
-    Medication(id: 'm2', name: 'Midazolam', category: 'Sedative', standardDosePerKg: 0.05, minDosePerKg: 0.02, maxDosePerKg: 0.1, unit: 'mg', interactions: ['m1']),
-  ];
-  List<Medication> get medications => _medications;
-
   Future<void> syncWithServer() async {
     _isLoading = true; notifyListeners();
     try {
-      await _mongoService.seedMedications(_medications);
-      _medications = await _mongoService.fetchMedications();
       _patients = await _mongoService.fetchPatients();
-      _prescriptions = await _mongoService.fetchPrescriptions();
       _activityLogs = await _mongoService.fetchLogs();
+      _prescriptions = await _mongoService.fetchPrescriptions();
     } catch (e) { debugPrint("Sync error: $e"); }
     finally { _isLoading = false; notifyListeners(); }
   }
@@ -256,4 +232,9 @@ class AppState extends ChangeNotifier {
     final i = _patients.indexWhere((p) => p.id == id);
     if (i != -1) { _patients[i].history.add(h); await _mongoService.savePatient(_patients[i]); notifyListeners(); }
   }
+
+  List<Medication> get medications => [
+    Medication(id: 'm1', name: 'Propofol', category: 'Anesthetic', standardDosePerKg: 2.0, minDosePerKg: 1.5, maxDosePerKg: 2.5, unit: 'mg', warning: 'Monitor for PIS.', interactions: ['m2', 'm3']),
+    Medication(id: 'm2', name: 'Midazolam', category: 'Sedative', standardDosePerKg: 0.05, minDosePerKg: 0.02, maxDosePerKg: 0.1, unit: 'mg', interactions: ['m1']),
+  ];
 }
