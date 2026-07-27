@@ -107,13 +107,52 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
     );
   }
   void _showAdd(AppState appState) {
-    final id = TextEditingController(), ph = TextEditingController(), pw = TextEditingController(); String role = 'Doctor';
-    showDialog(context: context, builder: (c) => AlertDialog(title: const Text('Add Staff'), content: Column(mainAxisSize: MainAxisSize.min, children: [
-      DropdownButtonFormField<String>(initialValue: role, items: ['Doctor', 'Nurse'].map((r) => DropdownMenuItem(value: r, child: Text(r))).toList(), onChanged: (v) => role = v!),
-      TextField(controller: id, decoration: const InputDecoration(labelText: 'Staff ID')),
-      TextField(controller: ph, decoration: const InputDecoration(labelText: 'Phone')),
-      TextField(controller: pw, decoration: const InputDecoration(labelText: 'Password'), obscureText: true),
-    ]), actions: [TextButton(onPressed: () => Navigator.pop(c), child: const Text('Cancel')), ElevatedButton(onPressed: () async { if (await appState.register(role, id.text, ph.text, pw.text)) { Navigator.pop(c); _load(); } }, child: const Text('Create'))]));
+    final id = TextEditingController(), ph = TextEditingController(), pw = TextEditingController(); 
+    String role = 'Doctor';
+    bool dialogLoading = false;
+
+    showDialog(
+      context: context, 
+      builder: (c) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: const Text('Add Staff Member'), 
+          content: Column(
+            mainAxisSize: MainAxisSize.min, 
+            children: [
+              DropdownButtonFormField<String>(
+                value: role, 
+                decoration: const InputDecoration(labelText: 'Role'),
+                items: ['Doctor', 'Nurse'].map((r) => DropdownMenuItem(value: r, child: Text(r))).toList(), 
+                onChanged: (v) => setDialogState(() => role = v!),
+              ),
+              TextField(controller: id, decoration: const InputDecoration(labelText: 'Staff ID')),
+              TextField(controller: ph, decoration: const InputDecoration(labelText: 'Phone')),
+              TextField(controller: pw, decoration: const InputDecoration(labelText: 'Password'), obscureText: true),
+            ],
+          ), 
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(c), child: const Text('Cancel')), 
+            ElevatedButton(
+              onPressed: dialogLoading ? null : () async {
+                setDialogState(() => dialogLoading = true);
+                final success = await appState.register(role, id.text, ph.text, pw.text);
+                if (mounted) {
+                  if (success) {
+                    Navigator.pop(c);
+                    _load();
+                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Staff added successfully!')));
+                  } else {
+                    setDialogState(() => dialogLoading = false);
+                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Error creating staff. Check connection.')));
+                  }
+                }
+              }, 
+              child: dialogLoading ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)) : const Text('Create'),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
 

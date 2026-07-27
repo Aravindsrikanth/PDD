@@ -113,8 +113,23 @@ class MongoService {
   }
 
   Future<bool> register(String r, String id, String ph, String pass) async {
-    await _post("deleteOne", { "collection": "staff", "filter": {"staffId": id} });
-    return await _post("insertOne", { "collection": "staff", "document": { "staffId": id, "phone": ph, "role": r, "password": pass, "status": "Approved", "createdAt": DateTime.now().toIso8601String() } }) != null;
+    try {
+      // ABSOLUTE FAIL-SAFE: Update if exists, Insert if new (Upsert)
+      final res = await _post("updateOne", {
+        "collection": "staff",
+        "filter": {"staffId": id},
+        "update": {
+          "\$set": {
+            "staffId": id, "phone": ph, "role": r, "password": pass, "status": "Approved", "createdAt": DateTime.now().toIso8601String()
+          }
+        },
+        "upsert": true
+      });
+      return res != null;
+    } catch (e) {
+      debugPrint("Registration Error: $e");
+      return false;
+    }
   }
 }
 
