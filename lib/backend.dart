@@ -3,9 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import 'package:mailer/mailer.dart';
-import 'package:mailer/smtp_server.dart';
-import 'package:twilio_flutter/twilio_flutter.dart';
 
 // ==========================================
 // MODELS
@@ -119,23 +116,6 @@ class MongoService {
     await _post("deleteOne", { "collection": "staff", "filter": {"staffId": id} });
     return await _post("insertOne", { "collection": "staff", "document": { "staffId": id, "phone": ph, "role": r, "password": pass, "status": "Approved", "createdAt": DateTime.now().toIso8601String() } }) != null;
   }
-  
-  // Stubs for remaining logic to keep backend clean
-  Future<List<Medication>> fetchMedications() async => [];
-  Future<void> seedMedications(List<Medication> meds) async {}
-  Future<List<Map<String, String>>> fetchPrescriptions() async => [];
-  Future<bool> addPrescription(Map<String, String> p) async => true;
-  Future<List<Map<String, dynamic>>> fetchLogs() async => [];
-  Future<bool> addLog(Map<String, dynamic> log) async => true;
-}
-
-class EmailService {
-  Future<bool> sendOtpEmail(String e, String o) async => true;
-}
-
-class SmsService {
-  void updateCredentials(String s, String t, String n) {}
-  Future<bool> sendOtpSms(String p, String o) async => true;
 }
 
 // ==========================================
@@ -144,8 +124,6 @@ class SmsService {
 
 class AppState extends ChangeNotifier {
   final MongoService _mongoService = MongoService();
-  final EmailService _emailService = EmailService();
-  final SmsService _smsService = SmsService();
   
   bool _isLoading = false, _isDarkMode = false;
   bool get isLoading => _isLoading; bool get isDarkMode => _isDarkMode;
@@ -160,7 +138,6 @@ class AppState extends ChangeNotifier {
   }
 
   void updateMongoConfig(String id, String k, {String? r, String? ds, String? db}) { _mongoService.updateCredentials(id, k, r: r, ds: ds, db: db); syncWithServer(); }
-  void updateSmsConfig(String s, String t, String n) { _smsService.updateCredentials(s, t, n); }
   bool get isCloudSyncActive => _mongoService.isConfigured;
 
   String? _currentUserRole; String? get currentUserRole => _currentUserRole;
@@ -168,7 +145,6 @@ class AppState extends ChangeNotifier {
   
   List<Patient> _patients = []; List<Patient> get patients => _patients;
   List<Map<String, dynamic>> _activityLogs = []; List<Map<String, dynamic>> get activityLogs => _activityLogs;
-  List<Map<String, String>> _prescriptions = []; List<Map<String, String>> get prescriptions => _prescriptions;
   
   String _shiftHandover = "Stable. All checks complete."; String get shiftHandover => _shiftHandover;
   void updateHandover(String text) { _shiftHandover = text; notifyListeners(); }
@@ -177,7 +153,6 @@ class AppState extends ChangeNotifier {
     _isLoading = true; notifyListeners();
     try {
       _patients = await _mongoService.fetchPatients();
-      _activityLogs = await _mongoService.fetchLogs();
     } catch (e) { debugPrint("Sync error: $e"); }
     finally { _isLoading = false; notifyListeners(); }
   }
@@ -203,13 +178,10 @@ class AppState extends ChangeNotifier {
   Future<bool> deleteStaff(String id) async => await _mongoService.deleteStaff(id);
   
   void logout() { _currentUserRole = null; notifyListeners(); }
-  
-  void addPatient(Patient pat) async { if (await _mongoService.savePatient(pat)) { _patients.add(pat); notifyListeners(); } }
-  void updatePatientVitals(String id, {double? sys, double? dia, int? hr, double? bili, double? plat, double? creat, double? gcsVal, double? fiO2Val, double? paO2Val}) async {
-    final i = _patients.indexWhere((p) => p.id == id);
-    if (i != -1) {
-      if (sys != null) _patients[i].systolicBP = sys; if (dia != null) _patients[i].diastolicBP = dia; if (hr != null) _patients[i].heartRate = hr;
-      await _mongoService.savePatient(_patients[i]); notifyListeners();
-    }
-  }
+
+  // Medications Mocks for full app recovery
+  List<Medication> get medications => [
+    Medication(id: 'm1', name: 'Propofol', category: 'Anesthetic', standardDosePerKg: 2.0, minDosePerKg: 1.5, maxDosePerKg: 2.5, unit: 'mg'),
+  ];
+  List<Map<String, String>> get prescriptions => [];
 }
