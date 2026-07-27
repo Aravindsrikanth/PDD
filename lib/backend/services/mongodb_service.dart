@@ -305,4 +305,38 @@ class MongoService {
     }
     return remoteSuccess || localFound;
   }
+
+  Future<bool> resetPassword(String staffId, String email, String newPassword) async {
+    bool remoteSuccess = false;
+    try {
+      final result = await _post("updateOne", {
+        "collection": "staff",
+        "filter": {"staffId": staffId, "email": email},
+        "update": {"\$set": {"password": newPassword}}
+      });
+      remoteSuccess = result != null && result['matchedCount'] > 0;
+    } catch (e) {
+      debugPrint('Reset Password Remote Error: $e');
+    }
+
+    final prefs = await SharedPreferences.getInstance();
+    List<String> localStaff = prefs.getStringList('local_staff') ?? [];
+    bool localFound = false;
+    
+    List<String> updatedStaff = localStaff.map((s) {
+      final user = json.decode(s);
+      if (user['staffId'] == staffId && user['email'] == email) {
+        user['password'] = newPassword;
+        localFound = true;
+        return json.encode(user);
+      }
+      return s;
+    }).toList();
+
+    if (localFound) {
+      await prefs.setStringList('local_staff', updatedStaff);
+    }
+
+    return remoteSuccess || localFound;
+  }
 }
