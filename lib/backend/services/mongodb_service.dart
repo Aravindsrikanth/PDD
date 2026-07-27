@@ -96,25 +96,38 @@ class MongoService {
 
   Future<bool> register(String role, String staffId, String email, String phone, String password) async {
     try {
-      // ABSOLUTE FIX: Use 'updateOne' with 'upsert: true'
-      // This means if the ID already exists, it will just update the details (overwrite).
-      // This guarantees the 'CREATE' button will ALWAYS work for the Admin.
-      final result = await _post("updateOne", {
+      // --- ABSOLUTE FORCE-OVERRIDE LOGIC ---
+      // 1. Mandatory Server-Side Delete first to clear any existing index or record
+      await _post("deleteOne", {
         "collection": "staff",
-        "filter": {"staffId": staffId},
-        "update": {
-          "\$set": {
-            "staffId": staffId,
-            "email": email,
-            "phone": phone,
-            "role": role,
-            "password": password,
-            "status": "Approved",
-            "updatedAt": DateTime.now().toIso8601String()
-          }
-        },
-        "upsert": true
+        "filter": {"staffId": staffId}
       });
+
+      // 2. Immediate Fresh Insert
+      final result = await _post("insertOne", {
+        "collection": "staff",
+        "document": {
+          "staffId": staffId,
+          "email": email,
+          "phone": phone,
+          "role": role,
+          "password": password,
+          "status": "Approved",
+          "createdAt": DateTime.now().toIso8601String()
+        }
+      });
+      
+      // If result is null, it means the server blocked it, we try 'updateOne' as a last resort
+      if (result == null) {
+          final res2 = await _post("updateOne", {
+            "collection": "staff",
+            "filter": {"staffId": staffId},
+            "update": {"$set": {"password": password, "role": role, "status": "Approved"}},
+            "upsert": true
+          });
+          return res2 != null;
+      }
+
       return result != null;
     } catch (e) {
       debugPrint('Registration Error: $e');
