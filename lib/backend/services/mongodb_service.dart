@@ -96,18 +96,24 @@ class MongoService {
 
   Future<bool> register(String role, String staffId, String email, String phone, String password) async {
     try {
-      // FORCE CLEAN-UP: Check if ID exists and delete it first if the user requested a purge
-      final result = await _post("insertOne", {
+      // ABSOLUTE FIX: Use 'updateOne' with 'upsert: true'
+      // This means if the ID already exists, it will just update the details (overwrite).
+      // This guarantees the 'CREATE' button will ALWAYS work for the Admin.
+      final result = await _post("updateOne", {
         "collection": "staff",
-        "document": {
-          "staffId": staffId,
-          "email": email,
-          "phone": phone,
-          "role": role,
-          "password": password,
-          "status": "Approved", 
-          "createdAt": DateTime.now().toIso8601String()
-        }
+        "filter": {"staffId": staffId},
+        "update": {
+          "\$set": {
+            "staffId": staffId,
+            "email": email,
+            "phone": phone,
+            "role": role,
+            "password": password,
+            "status": "Approved",
+            "updatedAt": DateTime.now().toIso8601String()
+          }
+        },
+        "upsert": true
       });
       return result != null;
     } catch (e) {
@@ -137,7 +143,6 @@ class MongoService {
 
   Future<bool> deleteStaff(String staffId) async {
     try {
-      // This physically removes the user from the MongoDB database
       final result = await _post("deleteOne", {
         "collection": "staff",
         "filter": {"staffId": staffId}
