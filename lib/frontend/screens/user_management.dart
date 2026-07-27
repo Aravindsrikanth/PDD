@@ -33,42 +33,84 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
     final phoneController = TextEditingController();
     final passController = TextEditingController();
     String selectedRole = 'Nurse';
+    String? errorText;
 
     showDialog(
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
-          title: const Text('Add New Staff Member'),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: const Text('Add New Staff Member', style: TextStyle(fontWeight: FontWeight.bold)),
           content: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
+                if (errorText != null)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 12.0),
+                    child: Text(errorText!, style: const TextStyle(color: Colors.red, fontSize: 12, fontWeight: FontWeight.bold)),
+                  ),
                 DropdownButtonFormField<String>(
                   value: selectedRole,
-                  decoration: const InputDecoration(labelText: 'Role'),
+                  decoration: const InputDecoration(labelText: 'Role', border: OutlineInputBorder()),
                   items: ['Doctor', 'Nurse'].map((r) => DropdownMenuItem(value: r, child: Text(r))).toList(),
                   onChanged: (v) => setDialogState(() => selectedRole = v!),
                 ),
-                TextField(controller: idController, decoration: const InputDecoration(labelText: 'Staff ID')),
-                TextField(controller: phoneController, decoration: const InputDecoration(labelText: 'Phone Number')),
-                TextField(controller: passController, decoration: const InputDecoration(labelText: 'Password'), obscureText: true),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: idController,
+                  decoration: const InputDecoration(labelText: 'Staff ID', prefixIcon: Icon(Icons.badge_outlined), border: OutlineInputBorder()),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: phoneController,
+                  keyboardType: TextInputType.phone,
+                  maxLength: 10,
+                  decoration: const InputDecoration(
+                    labelText: 'Phone Number (10 Digits)', 
+                    prefixIcon: Icon(Icons.phone_android), 
+                    border: OutlineInputBorder(),
+                    counterText: "",
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: passController,
+                  decoration: const InputDecoration(labelText: 'Password', prefixIcon: Icon(Icons.lock_outline), border: OutlineInputBorder()),
+                  obscureText: true,
+                ),
               ],
             ),
           ),
           actions: [
             TextButton(onPressed: () => Navigator.pop(context), child: const Text('CANCEL')),
             ElevatedButton(
+              style: ElevatedButton.styleFrom(shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))),
               onPressed: () async {
+                // Validation Logic
+                if (idController.text.isEmpty || phoneController.text.isEmpty || passController.text.isEmpty) {
+                  setDialogState(() => errorText = "ALL FIELDS ARE REQUIRED");
+                  return;
+                }
+                if (phoneController.text.length != 10) {
+                  setDialogState(() => errorText = "PHONE NUMBER MUST BE 10 DIGITS");
+                  return;
+                }
+
                 final appState = Provider.of<AppState>(context, listen: false);
                 final success = await appState.register(selectedRole, idController.text, "N/A", phoneController.text, passController.text);
+                
                 if (success) {
-                  // Admin created accounts are auto-approved
                   await appState.approveUser(idController.text);
                   if (mounted) {
                     Navigator.pop(context);
                     _loadStaff();
-                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Staff account created successfully.')));
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Staff account created and approved!'), backgroundColor: Colors.green)
+                    );
                   }
+                } else {
+                  setDialogState(() => errorText = "STAFF ID ALREADY EXISTS");
                 }
               },
               child: const Text('CREATE ACCOUNT'),
@@ -103,14 +145,17 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
               bool isMainAdmin = staffId == "admin";
 
               return Card(
+                margin: const EdgeInsets.only(bottom: 12),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
                 child: ListTile(
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                   leading: CircleAvatar(
                     backgroundColor: _getStatusColor(status).withOpacity(0.1),
-                    child: Icon(Icons.person, color: _getStatusColor(status)),
+                    child: Icon(Icons.person_outline, color: _getStatusColor(status)),
                   ),
-                  title: Text('$staffId ($role)'),
-                  subtitle: Text('Status: $status'),
-                  trailing: isMainAdmin ? const Text('MASTER') : PopupMenuButton<String>(
+                  title: Text('$staffId', style: const TextStyle(fontWeight: FontWeight.bold)),
+                  subtitle: Text('$role • Status: $status', style: TextStyle(color: Colors.grey[600], fontSize: 12)),
+                  trailing: isMainAdmin ? const Text('MASTER', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.blue)) : PopupMenuButton<String>(
                     onSelected: (val) async {
                        if (val == 'approve') await appState.approveUser(staffId);
                        if (val == 'block') await appState.blockUser(staffId);
@@ -127,8 +172,8 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
           ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _showAddStaffDialog,
-        icon: const Icon(Icons.person_add),
-        label: const Text('ADD STAFF'),
+        icon: const Icon(Icons.person_add_alt_1),
+        label: const Text('ADD NEW STAFF'),
         backgroundColor: const Color(0xFF0D47A1),
       ),
     );
